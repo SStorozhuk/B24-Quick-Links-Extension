@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "Bitrix24 Быстрые ссылки",
+  "description": "Быстрые ссылки с интерфейсом Bitrix24 для порталов OSTEC.",
+  "version": "1.0",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://bitrix24.ostec-group.ru/*",
+    "https://bitrix24test.ostec-group.ru/*",
+    "https://bitrix24develop.ostec-group.ru/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://bitrix24.ostec-group.ru/*",
+        "https://bitrix24test.ostec-group.ru/*",
+        "https://bitrix24develop.ostec-group.ru/*"
+      ],
+      "js": [
+        "vendor/bxui-init.js",
+        "vendor/ui.buttons.bundle.isolated.js",
+        "vendor/bxui-button-bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://bitrix24.ostec-group.ru/*",
+        "https://bitrix24test.ostec-group.ru/*",
+        "https://bitrix24develop.ostec-group.ru/*"
+      ],
+      "css": [
+        "vendor/ui.buttons.bundle.min.css",
+        "vendor/ui.forms.min.css",
+        "vendor/ui.counter.min.css",
+        "vendor/ui.label.bundle.min.css",
+        "vendor/ui.alerts.min.css",
+        "styles.css",
+        "bxui-skin.css"
+      ],
+      "js": [
+        "settings.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

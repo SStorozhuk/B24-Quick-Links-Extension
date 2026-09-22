@@ -1,0 +1,1393 @@
+:root {
+  /* Базовая темная палитра расширения. Светлая тема переопределяется ниже в .b24ql-modal. */
+  --b24ql-bg: #1f242d;
+  --b24ql-panel: #222832;
+  --b24ql-panel-2: #2a313b;
+  --b24ql-border: rgba(255, 255, 255, 0.12);
+  --b24ql-border-strong: rgba(255, 255, 255, 0.22);
+  --b24ql-text: #f2f5f8;
+  --b24ql-muted: #9aa5b1;
+  --b24ql-accent: #16b8d8;
+  --b24ql-accent-soft: rgba(22, 184, 216, 0.18);
+  --b24ql-shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+  --b24ql-overlay: rgba(12, 16, 22, 0.64);
+  --b24ql-suboverlay: rgba(12, 16, 22, 0.52);
+  --b24ql-section-bg: rgba(31, 36, 45, 0.72);
+  --b24ql-control: #aab4bf;
+  --b24ql-control-hover: #ffffff;
+  --b24ql-control-hover-bg: rgba(255, 255, 255, 0.08);
+  --b24ql-badge: #c6d0da;
+  --b24ql-badge-bg: rgba(255, 255, 255, 0.08);
+}
+
+.b24ql-page-locked {
+  /* Блокирует прокрутку страницы Bitrix24, пока открыто окно быстрых ссылок. */
+  overflow: hidden !important;
+}
+
+.b24ql-menu-button,
+.b24ql-menu-button *,
+.b24ql-modal,
+.b24ql-modal * {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, "system-ui", "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  letter-spacing: 0;
+}
+
+/* Пункт "Быстрые ссылки" внутри левого меню Bitrix24. */
+.b24ql-menu-item {
+  position: relative;
+  display: flex;
+  width: calc(100% - 14px);
+  height: 38px;
+  min-height: 38px;
+  margin: 4px 0 0 14px;
+  padding: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--b24ql-menu-color, inherit);
+  overflow: visible;
+  list-style: none;
+  user-select: none;
+}
+
+.b24ql-menu-item-native-parent {
+  width: 100%;
+  margin-left: 0;
+}
+
+.b24ql-menu-item[draggable="true"] {
+  cursor: grab;
+}
+
+.b24ql-menu-item-dragging {
+  opacity: 0.62;
+}
+
+.b24ql-menu-button {
+  border: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  color: var(--b24ql-menu-color, inherit);
+  background: transparent;
+  box-shadow: none;
+  user-select: none;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.b24ql-menu-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+}
+
+.b24ql-menu-button:active {
+  transform: translateY(1px);
+}
+
+.b24ql-menu-button-inline {
+  display: flex;
+  flex: 1 1 0%;
+  width: 100%;
+  height: 38px;
+  min-width: 38px;
+  min-height: 38px;
+  padding: 6px;
+  border-radius: 10px;
+  color: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 18px;
+  white-space: nowrap;
+  cursor: grab;
+}
+
+.b24ql-menu-button-inline:active {
+  cursor: grabbing;
+}
+
+.b24ql-menu-icon-box {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.b24ql-menu-button-icon {
+  display: grid !important;
+  width: 20px;
+  min-width: 20px;
+  gap: 3px;
+  background: transparent;
+}
+
+.b24ql-menu-button-inline .b24ql-menu-button-icon {
+  width: 20px;
+  min-width: 20px;
+  gap: 3px;
+}
+
+.b24ql-menu-button-icon span {
+  display: block !important;
+  width: 20px;
+  height: 3px;
+  border-radius: 99px;
+  background: currentColor;
+}
+
+.b24ql-menu-button-inline .b24ql-menu-button-icon span {
+  width: 20px;
+  height: 3px;
+}
+
+.b24ql-menu-button-text {
+  display: block;
+  position: relative;
+  flex: 0 1 auto;
+  max-width: 155px;
+  height: 20px;
+  margin: 0 0 0 9px;
+  padding: 0;
+  color: var(--b24ql-menu-color, inherit);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-collapsed-mode .b24ql-menu-button-text,
+.menu-items-block-collapsed .b24ql-menu-button-text,
+.menu-items-view-mode-collapsed .b24ql-menu-button-text {
+  display: none;
+}
+
+/* Основное модальное окно и переменные темной темы. */
+.b24ql-modal {
+  --b24ql-bg: #1f242d;
+  --b24ql-panel: #222832;
+  --b24ql-panel-2: #2a313b;
+  --b24ql-border: rgba(255, 255, 255, 0.12);
+  --b24ql-border-strong: rgba(255, 255, 255, 0.22);
+  --b24ql-text: #f2f5f8;
+  --b24ql-muted: #9aa5b1;
+  --b24ql-accent: #16b8d8;
+  --b24ql-accent-soft: rgba(22, 184, 216, 0.18);
+  --b24ql-shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+  --b24ql-overlay: rgba(12, 16, 22, 0.64);
+  --b24ql-suboverlay: rgba(12, 16, 22, 0.52);
+  --b24ql-section-bg: rgba(31, 36, 45, 0.72);
+  --b24ql-control: #aab4bf;
+  --b24ql-control-hover: #ffffff;
+  --b24ql-control-hover-bg: rgba(255, 255, 255, 0.08);
+  --b24ql-badge: #c6d0da;
+  --b24ql-badge-bg: rgba(255, 255, 255, 0.08);
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 34px;
+  color: var(--b24ql-text);
+  color-scheme: dark;
+  background: var(--b24ql-overlay);
+  backdrop-filter: blur(3px);
+}
+
+/* Светлая тема: включается кнопкой в окне или автоматически по теме браузера. */
+.b24ql-modal[data-b24ql-effective-theme="light"] {
+  --b24ql-bg: #ffffff;
+  --b24ql-panel: #f7f9fc;
+  --b24ql-panel-2: #eef3f7;
+  --b24ql-border: rgba(39, 52, 69, 0.14);
+  --b24ql-border-strong: rgba(39, 52, 69, 0.24);
+  --b24ql-text: #1f2933;
+  --b24ql-muted: #687583;
+  --b24ql-accent-soft: rgba(22, 184, 216, 0.13);
+  --b24ql-shadow: 0 24px 72px rgba(31, 42, 53, 0.22);
+  --b24ql-overlay: rgba(236, 241, 246, 0.72);
+  --b24ql-suboverlay: rgba(236, 241, 246, 0.55);
+  --b24ql-section-bg: rgba(247, 249, 252, 0.82);
+  --b24ql-control: #687583;
+  --b24ql-control-hover: #1f2933;
+  --b24ql-control-hover-bg: rgba(31, 41, 51, 0.08);
+  --b24ql-badge: #5f6d7b;
+  --b24ql-badge-bg: rgba(31, 41, 51, 0.08);
+  color-scheme: light;
+}
+
+.b24ql-hidden {
+  display: none !important;
+}
+
+/* Каркас окна: ширина, высота, фон и шапка. */
+.b24ql-panel {
+  position: relative;
+  z-index: 0;
+  width: min(1040px, calc(100vw - 48px));
+  max-height: min(720px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 10px;
+  background: var(--b24ql-bg);
+  box-shadow: var(--b24ql-shadow);
+}
+
+.b24ql-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--b24ql-border);
+}
+
+.b24ql-header h2 {
+  margin: 0 0 5px;
+  color: var(--b24ql-text);
+  font-size: 19px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.b24ql-header p {
+  margin: 0;
+  color: var(--b24ql-muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.b24ql-title-wrap {
+  min-width: 0;
+}
+
+/* Кнопки в шапке: настройки и закрытие окна. */
+.b24ql-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.b24ql-close,
+.b24ql-settings-open {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  color: var(--b24ql-control);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.b24ql-close {
+  line-height: 0;
+}
+
+.b24ql-close:hover,
+.b24ql-close:focus,
+.b24ql-settings-open:hover,
+.b24ql-settings-open:focus {
+  color: var(--b24ql-control-hover);
+  outline: none;
+  background: var(--b24ql-control-hover-bg);
+}
+
+.b24ql-close-icon,
+.b24ql-settings-open-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.b24ql-close-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Вложенное окно для групп кнопок CRM и окно настроек. */
+.b24ql-submodal,
+.b24ql-settings-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 34px;
+  background: var(--b24ql-suboverlay);
+  backdrop-filter: blur(2px);
+}
+
+/* Небольшой диалог для ввода ID перед открытием шаблонной ссылки. */
+.b24ql-template-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(9, 14, 21, 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.b24ql-template-panel {
+  width: min(460px, calc(100vw - 48px));
+  overflow: hidden;
+  border: 1px solid var(--b24ql-border-strong);
+  border-radius: 10px;
+  background: var(--b24ql-bg);
+  box-shadow: var(--b24ql-shadow);
+}
+
+.b24ql-template-header {
+  display: flex;
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--b24ql-border);
+  background: var(--b24ql-panel);
+}
+
+.b24ql-template-header h2 {
+  min-width: 0;
+  margin: 0;
+  color: var(--b24ql-text);
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.b24ql-template-form {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.b24ql-template-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.b24ql-template-field {
+  display: grid;
+  gap: 7px;
+  color: var(--b24ql-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.b24ql-template-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 8px;
+  outline: none;
+  color: var(--b24ql-text);
+  background: var(--b24ql-panel-2);
+  font-size: 15px;
+  font-weight: 650;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.b24ql-template-input:focus {
+  border-color: rgba(22, 184, 216, 0.68);
+  box-shadow: 0 0 0 3px var(--b24ql-accent-soft);
+}
+
+.b24ql-template-input-invalid {
+  border-color: #e65b67;
+}
+
+.b24ql-template-error {
+  color: #e65b67;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.b24ql-template-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Команды в диалогах: основное действие акцентное, вспомогательное с контуром. */
+.b24ql-modal .b24ql-ui-action {
+  max-width: 100%;
+}
+
+.b24ql-modal .b24ql-ui-action.ui-btn-light-border {
+  --ui-btn-background: transparent;
+  --ui-btn-background-hover: rgba(255, 255, 255, 0.1);
+  --ui-btn-background-active: rgba(255, 255, 255, 0.16);
+  --ui-btn-border-color: rgba(255, 255, 255, 0.38);
+  --ui-btn-border-color-hover: rgba(255, 255, 255, 0.56);
+  --ui-btn-border-color-active: rgba(255, 255, 255, 0.65);
+  --ui-btn-color: #e7eef6;
+  --ui-btn-color-hover: #ffffff;
+  --ui-btn-color-active: #ffffff;
+}
+
+.b24ql-modal[data-b24ql-effective-theme="light"] .b24ql-ui-action.ui-btn-light-border {
+  --ui-btn-background-hover: rgba(31, 41, 51, 0.08);
+  --ui-btn-background-active: rgba(31, 41, 51, 0.13);
+  --ui-btn-border-color: #b9c4cf;
+  --ui-btn-border-color-hover: #7c8d9c;
+  --ui-btn-border-color-active: #687583;
+  --ui-btn-color: #344251;
+  --ui-btn-color-hover: #1f2933;
+  --ui-btn-color-active: #1f2933;
+}
+
+.b24ql-ui-button-host {
+  display: inline-flex;
+  align-items: center;
+}
+
+.b24ql-subpanel {
+  width: min(920px, calc(100vw - 72px));
+  max-height: min(520px, calc(100vh - 72px));
+}
+
+.b24ql-settings-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(920px, calc(100vw - 72px));
+  height: min(560px, calc(100vh - 72px));
+  max-height: min(560px, calc(100vh - 72px));
+}
+
+.b24ql-subheader {
+  align-items: center;
+}
+
+.b24ql-subactions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.b24ql-subcontent {
+  max-height: calc(min(520px, 100vh - 72px) - 84px);
+}
+
+.b24ql-content.b24ql-settings-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+
+.b24ql-settings-editor-active .b24ql-content.b24ql-settings-content {
+  overflow: hidden;
+  padding: 0;
+  background: var(--b24ql-panel);
+}
+
+.b24ql-settings-view {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+}
+
+.b24ql-settings-row {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 12px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 8px;
+  background: var(--b24ql-section-bg);
+}
+
+.b24ql-settings-row-title {
+  min-width: 0;
+  color: var(--b24ql-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.b24ql-choice-group {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 8px;
+  background: var(--b24ql-panel-2);
+}
+
+.b24ql-choice {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--b24ql-control);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.b24ql-choice {
+  min-width: 54px;
+  padding: 0 10px;
+}
+
+.b24ql-choice:hover,
+.b24ql-choice:focus {
+  color: var(--b24ql-control-hover);
+  outline: none;
+  background: var(--b24ql-control-hover-bg);
+}
+
+.b24ql-choice-active {
+  color: var(--b24ql-text);
+  border-color: rgba(22, 184, 216, 0.44);
+  background: var(--b24ql-accent-soft);
+}
+
+/* Подтверждение действий внутри расширения вместо нестабильного системного confirm в Firefox. */
+.b24ql-confirm-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(9, 14, 21, 0.56);
+}
+
+.b24ql-confirm-panel {
+  width: min(420px, 100%);
+  padding: 22px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 8px;
+  color: var(--b24ql-text);
+  background: var(--b24ql-panel);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32);
+}
+
+.b24ql-confirm-message {
+  margin: 0;
+  color: var(--b24ql-text);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.b24ql-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.b24ql-settings-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.b24ql-links-editor-toolbar {
+  padding: 18px 24px 6px;
+  background: var(--b24ql-panel);
+}
+
+.b24ql-settings-toolbar h3 {
+  margin: 0;
+  color: var(--b24ql-text);
+  font-size: 15px;
+  font-weight: 740;
+  line-height: 1.2;
+}
+
+.b24ql-settings-list {
+  display: grid;
+  gap: 8px;
+}
+
+.b24ql-links-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 24px 14px;
+  border-bottom: 1px solid var(--b24ql-border);
+  background: var(--b24ql-panel);
+}
+
+.b24ql-links-editor-actions .b24ql-ui-action.ui-btn-sm {
+  --ui-btn-padding: 0 9px;
+  --ui-btn-min-width: 0px;
+}
+
+.b24ql-editor-notice {
+  flex: 1 0 100%;
+  padding-top: 2px;
+  color: var(--b24ql-control);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.b24ql-editor-notice-error {
+  color: #e65b67;
+}
+
+.b24ql-import-input {
+  display: none !important;
+}
+
+.b24ql-links-editor-list {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 24px 24px;
+  background: var(--b24ql-bg);
+}
+
+.b24ql-links-editor-view {
+  gap: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+  background: var(--b24ql-bg);
+}
+
+.b24ql-editor-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 8px;
+  background: var(--b24ql-section-bg);
+}
+
+.b24ql-editor-fields {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1.2fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.b24ql-editor-fields .b24ql-editor-input:only-child {
+  grid-column: 1 / -1;
+}
+
+.b24ql-editor-keywords {
+  grid-column: 1 / -1;
+}
+
+.b24ql-editor-input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 7px;
+  outline: none;
+  color: var(--b24ql-text);
+  background: var(--b24ql-panel-2);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 34px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.b24ql-editor-input:focus {
+  border-color: rgba(22, 184, 216, 0.68);
+  box-shadow: 0 0 0 3px var(--b24ql-accent-soft);
+}
+
+.b24ql-editor-meta {
+  display: inline-flex;
+  min-width: 0;
+  height: 34px;
+  align-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 7px;
+  color: var(--b24ql-muted);
+  background: var(--b24ql-panel-2);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.b24ql-editor-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* Поиск по основному окну и вложенным разделам. */
+.b24ql-search {
+  position: relative;
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 9px;
+  padding: 0 10px;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 8px;
+  background: var(--b24ql-panel-2);
+}
+
+.b24ql-search:focus-within {
+  border-color: rgba(22, 184, 216, 0.68);
+  box-shadow: 0 0 0 3px var(--b24ql-accent-soft);
+}
+
+.b24ql-search-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--b24ql-muted);
+}
+
+.b24ql-search-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.b24ql-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: none;
+  color: var(--b24ql-text);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 40px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.b24ql-search-input::placeholder {
+  color: var(--b24ql-muted);
+  opacity: 1;
+}
+
+.b24ql-search-input::-webkit-search-cancel-button,
+.b24ql-search-input::-webkit-search-decoration {
+  display: none;
+}
+
+.b24ql-search-clear {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  color: var(--b24ql-control);
+  background: transparent;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.b24ql-search-clear:hover,
+.b24ql-search-clear:focus {
+  color: var(--b24ql-control-hover);
+  outline: none;
+  background: var(--b24ql-control-hover-bg);
+}
+
+/* Блоки быстрых ссылок и сетка кнопок. */
+.b24ql-content {
+  display: grid;
+  gap: 18px;
+  max-height: calc(min(720px, 100vh - 48px) - 84px);
+  overflow: auto;
+  padding: 18px 24px 24px;
+}
+
+.b24ql-section {
+  border: 1px solid var(--b24ql-border);
+  border-radius: 10px;
+  background: var(--b24ql-section-bg);
+}
+
+.b24ql-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.b24ql-section-heading h3 {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--b24ql-text);
+  font-size: 14px;
+  font-weight: 720;
+  line-height: 1.2;
+}
+
+.b24ql-section-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--b24ql-accent);
+  box-shadow: 0 0 12px rgba(22, 184, 216, 0.95);
+}
+
+.b24ql-section-open-all,
+.b24ql-section-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--b24ql-control);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.16s ease, background 0.16s ease;
+}
+
+.b24ql-section-open-all:hover,
+.b24ql-section-open-all:focus,
+.b24ql-section-toggle:hover,
+.b24ql-section-toggle:focus {
+  color: var(--b24ql-control-hover);
+  outline: none;
+  background: var(--b24ql-control-hover-bg);
+}
+
+.b24ql-section-open-all-icon {
+  display: block;
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.b24ql-section-toggle-icon {
+  display: block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid currentColor;
+  transition: transform 0.16s ease;
+}
+
+.b24ql-section-collapsed .b24ql-section-toggle-icon {
+  transform: rotate(-90deg);
+}
+
+.b24ql-section-count {
+  display: inline-flex;
+  margin-left: auto;
+  min-width: 24px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  color: var(--b24ql-badge);
+  background: var(--b24ql-badge-bg);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+/* Поле заметок использует тот же каркас, что и остальные сворачиваемые блоки. */
+.b24ql-notes-section .b24ql-section-toggle {
+  margin-left: auto;
+}
+
+.b24ql-notes-body {
+  padding: 0 12px 12px;
+}
+
+.b24ql-notes-toolbar {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  padding: 3px 4px;
+  border: 1px solid var(--b24ql-border);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--b24ql-panel-2);
+}
+
+.b24ql-notes-tool {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--b24ql-control);
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.b24ql-notes-tool:hover,
+.b24ql-notes-tool:focus {
+  color: var(--b24ql-control-hover);
+  outline: none;
+  background: var(--b24ql-control-hover-bg);
+}
+
+.b24ql-notes-tool svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.b24ql-notes-bold-tool strong {
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.b24ql-notes-input {
+  display: block;
+  width: 100%;
+  min-height: 104px;
+  max-height: 280px;
+  padding: 11px 12px;
+  overflow: auto;
+  border: 1px solid var(--b24ql-border);
+  border-radius: 0 0 8px 8px;
+  outline: none;
+  color: var(--b24ql-text);
+  background: var(--b24ql-panel-2);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.b24ql-notes-input:empty::before {
+  content: attr(data-placeholder);
+  color: var(--b24ql-muted);
+  pointer-events: none;
+}
+
+.b24ql-notes-input:focus {
+  border-color: rgba(22, 184, 216, 0.68);
+  box-shadow: 0 0 0 3px var(--b24ql-accent-soft);
+}
+
+.b24ql-notes-input a {
+  color: var(--b24ql-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.b24ql-notes-input strong {
+  font-weight: 900;
+  text-shadow: 0.25px 0 0 currentColor, -0.25px 0 0 currentColor;
+}
+
+.b24ql-notes-input ol {
+  margin: 4px 0;
+  padding-left: 22px;
+  list-style: none;
+  counter-reset: b24ql-note-level-1;
+}
+
+.b24ql-notes-input ol ol {
+  counter-reset: b24ql-note-level-2;
+}
+
+.b24ql-notes-input ol ol ol {
+  counter-reset: b24ql-note-level-3;
+}
+
+.b24ql-notes-input > ol,
+.b24ql-notes-input > div > ol {
+  padding-left: 0;
+}
+
+.b24ql-notes-input li {
+  position: relative;
+  min-height: 20px;
+  padding-left: 46px;
+  counter-increment: b24ql-note-level-1;
+}
+
+.b24ql-notes-input ol ol > li {
+  counter-increment: b24ql-note-level-2;
+}
+
+.b24ql-notes-input ol ol ol > li {
+  counter-increment: b24ql-note-level-3;
+}
+
+.b24ql-notes-input li::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 40px;
+  content: counter(b24ql-note-level-1) ".";
+  color: var(--b24ql-muted);
+  text-align: right;
+}
+
+.b24ql-notes-input ol ol li::before {
+  content: counter(b24ql-note-level-1) "." counter(b24ql-note-level-2) ".";
+}
+
+.b24ql-notes-input ol ol ol li::before {
+  content: counter(b24ql-note-level-1) "." counter(b24ql-note-level-2) "." counter(b24ql-note-level-3) ".";
+}
+
+.b24ql-link-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.b24ql-subcontent .b24ql-link-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.b24ql-section-collapsed .b24ql-link-grid,
+.b24ql-section-collapsed .b24ql-notes-body {
+  display: none;
+}
+
+.b24ql-section-search-open .b24ql-link-grid {
+  display: grid;
+}
+
+.b24ql-section[hidden],
+.b24ql-link-shell[hidden],
+.b24ql-link[hidden] {
+  display: none !important;
+}
+
+.b24ql-search-results.b24ql-hidden {
+  display: none !important;
+}
+
+.b24ql-link {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  padding: 9px 42px 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--b24ql-text) !important;
+  background: var(--b24ql-panel-2);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+  text-align: left;
+  text-decoration: none !important;
+  overflow-wrap: anywhere;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.b24ql-link-shell {
+  position: relative;
+  min-width: 0;
+}
+
+.b24ql-favorite-toggle {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 8px;
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--b24ql-muted);
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.54;
+  transform: translateY(-50%);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.b24ql-favorite-toggle svg {
+  width: 17px;
+  height: 17px;
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.b24ql-link-shell:hover .b24ql-favorite-toggle,
+.b24ql-link-shell:focus-within .b24ql-favorite-toggle,
+.b24ql-favorite-toggle.b24ql-favorite-active {
+  opacity: 1;
+}
+
+.b24ql-favorite-toggle:hover,
+.b24ql-favorite-toggle:focus {
+  color: var(--b24ql-accent);
+  outline: none;
+  background: var(--b24ql-control-hover-bg);
+}
+
+.b24ql-favorite-toggle.b24ql-favorite-active {
+  color: var(--b24ql-accent);
+}
+
+.b24ql-favorite-toggle.b24ql-favorite-active svg {
+  fill: currentColor;
+}
+
+.b24ql-link-text {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.b24ql-link-group {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.b24ql-link-group .b24ql-link-arrow,
+.b24ql-link-template .b24ql-link-arrow {
+  margin-right: 2px;
+}
+
+.b24ql-link-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.b24ql-link-meta {
+  display: block;
+  min-width: 0;
+  color: var(--b24ql-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.b24ql-link-search-result {
+  min-height: 50px;
+}
+
+.b24ql-link-arrow {
+  flex: 0 0 auto;
+  color: var(--b24ql-muted);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.b24ql-link:hover,
+.b24ql-link:focus,
+.b24ql-link-search-selected {
+  border-color: rgba(22, 184, 216, 0.55);
+  outline: none;
+  background: linear-gradient(0deg, var(--b24ql-accent-soft), var(--b24ql-accent-soft)), var(--b24ql-panel-2);
+}
+
+.b24ql-link-active {
+  border-color: rgba(22, 184, 216, 0.82);
+  background: linear-gradient(0deg, var(--b24ql-accent-soft), var(--b24ql-accent-soft)), var(--b24ql-panel-2);
+  box-shadow: inset 3px 0 0 var(--b24ql-accent);
+}
+
+.b24ql-link-active::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--b24ql-accent);
+  box-shadow: 0 0 10px rgba(22, 184, 216, 0.9);
+}
+
+.b24ql-link-group.b24ql-link-active::after {
+  display: none;
+}
+
+.b24ql-link-group.b24ql-link-active .b24ql-link-arrow {
+  color: var(--b24ql-accent);
+}
+
+.b24ql-link:active {
+  transform: translateY(1px);
+}
+
+.b24ql-empty {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--b24ql-border);
+  border-radius: 8px;
+  color: var(--b24ql-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Адаптация сетки под узкие экраны. */
+@media (max-width: 860px) {
+  .b24ql-link-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .b24ql-modal {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .b24ql-panel {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+  }
+
+  .b24ql-header {
+    padding: 18px 16px 14px;
+  }
+
+  .b24ql-submodal,
+  .b24ql-settings-modal,
+  .b24ql-template-modal {
+    padding: 12px;
+  }
+
+  .b24ql-template-panel {
+    width: 100%;
+  }
+
+  .b24ql-subpanel,
+  .b24ql-settings-panel {
+    width: 100%;
+    height: calc(100vh - 24px);
+    max-height: calc(100vh - 24px);
+  }
+
+  .b24ql-content {
+    max-height: calc(100vh - 112px);
+    padding: 14px 16px 16px;
+  }
+
+  .b24ql-link-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .b24ql-settings-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .b24ql-choice-group {
+    width: 100%;
+  }
+
+  .b24ql-choice {
+    flex: 1 1 0;
+  }
+
+  .b24ql-editor-row {
+    grid-template-columns: 1fr;
+  }
+
+  .b24ql-editor-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .b24ql-editor-row-actions {
+    justify-content: flex-start;
+  }
+}

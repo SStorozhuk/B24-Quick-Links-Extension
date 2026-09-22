@@ -1,0 +1,10 @@
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+private/
+backups/
+tmp/
+*.pem
+*.key
+*.log

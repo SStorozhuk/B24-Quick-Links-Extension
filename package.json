@@ -1,0 +1,14 @@
+{
+  "name": "b24-quick-links-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build and QA tools for Bitrix24 Quick Links Extension",
+  "scripts": {
+    "test:syntax": "node --check src/chromium/content.js && node --check src/chromium/background.js && node --check src/firefox/content.js && node --check src/firefox/recovery-settings.js",
+    "test:background": "node tools/qa/bxui-background-test.js",
+    "test:ui": "node tools/qa/bxui-smoke-test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}

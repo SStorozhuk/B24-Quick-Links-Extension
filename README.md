@@ -32,6 +32,7 @@
 | Microsoft Edge | `src/chromium` | `releases/1.0/chromium/b24-quick-links-1.0.zip` |
 | Яндекс Браузер | `src/chromium` | `releases/1.0/chromium/b24-quick-links-1.0.crx` |
 | Firefox Developer Edition | `src/firefox` | `releases/1.0/firefox/b24-quick-links-1.0-unsigned.xpi` |
+| Safari + Userscripts | `src/safari-userscripts` | `releases/1.0/safari/*.user.js` |
 
 Контрольные суммы пакетов находятся в `releases/1.0/SHA256SUMS`.
 
@@ -57,11 +58,23 @@
 
 Обычный Firefox требует подпись Mozilla. Инструкция находится в [`docs/firefox-signing.md`](docs/firefox-signing.md).
 
+### Safari без Apple Developer Program
+
+Safari-вариант работает через бесплатный менеджер Userscripts и не требует ежедневной переустановки. Сборка поддерживает основной, тестовый и dev-порталы.
+
+1. Установите Userscripts из App Store и включите его расширение в Safari.
+2. Разрешите доступ к `bitrix24.ostec-group.ru`, `bitrix24test.ostec-group.ru` и `bitrix24develop.ostec-group.ru`.
+3. Скопируйте оба файла из `releases/1.0/safari` в папку `Save Location`, показанную приложением Userscripts.
+4. Обновите вкладку портала.
+
+Подробности находятся в [`src/safari-userscripts/README.md`](src/safari-userscripts/README.md).
+
 ## Структура репозитория
 
 ```text
 src/chromium/          исходники Chrome, Edge и Яндекс Браузера
 src/firefox/           исходники Firefox
+src/safari-userscripts/описание Safari-адаптера Userscripts
 releases/1.0/          готовые пакеты версии 1.0
 docs/                  документация и заметки о выпуске
 tools/                 упаковщик CRX3 и проверки
@@ -77,6 +90,7 @@ tools/                 упаковщик CRX3 и проверки
 
 ```bash
 npm install
+npm run build:safari
 npm run test:syntax
 npm run test:background
 npm run test:ui

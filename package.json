@@ -4,7 +4,9 @@
   "private": true,
   "description": "Build and QA tools for Bitrix24 Quick Links Extension",
   "scripts": {
-    "test:syntax": "node --check src/chromium/content.js && node --check src/chromium/background.js && node --check src/firefox/content.js && node --check src/firefox/recovery-settings.js",
+    "build:safari": "node tools/build-userscripts.js",
+    "test:safari": "node tools/build-userscripts.js && node tools/qa/userscripts-build-test.js",
+    "test:syntax": "node --check src/chromium/content.js && node --check src/chromium/background.js && node --check src/firefox/content.js && node --check src/firefox/recovery-settings.js && node --check tools/build-userscripts.js && node --check tools/qa/userscripts-build-test.js && node --check releases/1.0/safari/b24-quick-links-safari.user.js && node --check releases/1.0/safari/b24-quick-links-bxui-safari.user.js",
     "test:background": "node tools/qa/bxui-background-test.js",
     "test:ui": "node tools/qa/bxui-smoke-test.js"
   },

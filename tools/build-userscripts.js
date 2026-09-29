@@ -139,6 +139,89 @@ const SAFARI_STYLE_OVERRIDES = `
   left: -44px !important;
 }
 
+.b24ql-modal .b24ql-template-panel,
+.b24ql-modal .b24ql-template-form,
+.b24ql-modal .b24ql-template-fields,
+.b24ql-modal .b24ql-template-field,
+.b24ql-modal .b24ql-template-input,
+.b24ql-modal .b24ql-template-actions {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+
+.b24ql-modal .b24ql-template-form {
+  width: 100% !important;
+  padding: 24px !important;
+}
+
+.b24ql-modal .b24ql-template-fields,
+.b24ql-modal .b24ql-template-field,
+.b24ql-modal .b24ql-template-input,
+.b24ql-modal .b24ql-template-actions {
+  width: 100% !important;
+}
+
+.b24ql-modal .b24ql-template-actions {
+  flex-wrap: wrap !important;
+}
+
+.b24ql-modal .b24ql-switch-track {
+  box-sizing: border-box !important;
+  display: inline-block !important;
+  width: 54px !important;
+  min-width: 54px !important;
+  max-width: 54px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  line-height: normal !important;
+  flex: 0 0 54px !important;
+}
+
+.b24ql-modal label.b24ql-switch-option > .b24ql-switch-track::before {
+  box-sizing: border-box !important;
+  display: block !important;
+  top: 5px !important;
+  left: 19px !important;
+  width: auto !important;
+  height: 12px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  font-family: var(--ui-font-family-primary, "Helvetica Neue", Arial, sans-serif) !important;
+  font-size: 8px !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  line-height: 12px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  transform: none !important;
+}
+
+.b24ql-modal label.b24ql-switch-option > .b24ql-switch-track::after {
+  box-sizing: border-box !important;
+  display: block !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.b24ql-modal .b24ql-switch-option input:checked + .b24ql-switch-track::before {
+  left: 8px !important;
+}
+
+.b24ql-modal .b24ql-switch-option input:checked + .b24ql-switch-track::after {
+  transform: translateX(32px) !important;
+}
+
 .b24ql-modal .b24ql-header-actions .ui-btn:hover,
 .b24ql-modal .b24ql-subactions .ui-btn:hover,
 .b24ql-modal .b24ql-template-header .b24ql-close.ui-btn:hover,

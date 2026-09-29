@@ -23,6 +23,10 @@ assert.match(main, /b24ql-menu-button/);
 assert.match(main, /safari-userscripts-overrides/);
 assert.match(main, /\.b24ql-modal \.b24ql-link\.ui-btn \{/);
 assert.match(main, /position: absolute !important/);
+assert.match(main, /\.b24ql-modal \.b24ql-template-form \{[\s\S]*?padding: 24px !important/);
+assert.match(main, /\.b24ql-modal \.b24ql-template-actions \{[\s\S]*?flex-wrap: wrap !important/);
+assert.match(main, /\.b24ql-modal label\.b24ql-switch-option > \.b24ql-switch-track::before \{[\s\S]*?font-size: 8px !important[\s\S]*?line-height: 12px !important/);
+assert.match(main, /\.b24ql-modal \.b24ql-switch-option input:checked \+ \.b24ql-switch-track::after \{[\s\S]*?translateX\(32px\) !important/);
 assert.match(main, /data:image\/svg\+xml;base64,/);
 assert.doesNotMatch(main, /url\(\\?"vendor\/images\/search\.svg\\?"\)/);
 

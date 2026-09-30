@@ -14,7 +14,7 @@ const PORTALS = [
   "https://bitrix24test.ostec-group.ru/*",
   "https://bitrix24develop.ostec-group.ru/*"
 ];
-const VERSION = "1.0.0";
+const VERSION = "1.0.2";
 
 const cssFiles = [
   "vendor/ui.buttons.bundle.min.css",
@@ -27,9 +27,7 @@ const cssFiles = [
 ];
 
 const pageScriptFiles = [
-  "vendor/bxui-init.js",
-  "vendor/ui.buttons.bundle.isolated.js",
-  "vendor/bxui-button-bridge.js"
+  "../safari-userscripts/bxui-page-bridge.js"
 ];
 
 // Userscripts injects the extension into the portal document, where Bitrix can
@@ -516,6 +514,13 @@ function buildMainScript() {
   };
 
   const chrome = userscriptsChrome;
+
+  const __B24QL_SAFARI_RUNTIME__ = true;
+  globalThis.B24QL_RUNTIME_OPTIONS = Object.freeze({
+    destroyModalOnClose: true,
+    leanLayoutWatcher: true
+  });
+  console.info("B24 Quick Links: Safari runtime ${VERSION} enabled");
 
 ${settings}
 

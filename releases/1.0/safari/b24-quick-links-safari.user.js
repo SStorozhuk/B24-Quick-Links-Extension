@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bitrix24 Быстрые ссылки (Safari)
 // @namespace    https://github.com/SStorozhuk/B24-Quick-Links-Extension
-// @version      1.0.0
+// @version      1.0.2
 // @description  Быстрые ссылки Bitrix24 для порталов OSTEC.
 // @match        https://bitrix24.ostec-group.ru/*
 // @match        https://bitrix24test.ostec-group.ru/*
@@ -110,6 +110,13 @@
   };
 
   const chrome = userscriptsChrome;
+
+  const __B24QL_SAFARI_RUNTIME__ = true;
+  globalThis.B24QL_RUNTIME_OPTIONS = Object.freeze({
+    destroyModalOnClose: true,
+    leanLayoutWatcher: true
+  });
+  console.info("B24 Quick Links: Safari runtime 1.0.2 enabled");
 
 (function (root) {
   "use strict";
@@ -599,6 +606,10 @@
   const settings = (typeof globalThis !== "undefined" && globalThis.B24QL_SETTINGS)
     || window.B24QL_SETTINGS
     || {};
+  const runtimeOptions = (typeof globalThis !== "undefined" && globalThis.B24QL_RUNTIME_OPTIONS)
+    || {};
+  const isSafariUserscriptRuntime = typeof __B24QL_SAFARI_RUNTIME__ !== "undefined"
+    && __B24QL_SAFARI_RUNTIME__ === true;
   const PORTAL_HOSTS = Array.isArray(settings.portalHosts) ? settings.portalHosts : [];
   const PRODUCTION_PORTAL_HOST = settings.defaultPortalHost || PORTAL_HOSTS[0] || window.location.hostname;
   const DEFAULT_COLLAPSED_SECTIONS = settings.defaultCollapsedSections || {};
@@ -5300,6 +5311,11 @@
     if (!overlay) {
       return;
     }
+    const uiButtonHost = overlay.querySelector("#b24ql-ui-button-host");
+    if (uiButtonHost) {
+      uiButtonHost.dataset.active = "false";
+      document.dispatchEvent(new Event("b24ql-ui-dispose"));
+    }
     overlay.classList.add("b24ql-hidden");
     overlay.__b24qlLink = null;
     templateOpenInNewTab = false;
@@ -5574,12 +5590,25 @@
     closeSubModal(true);
     const modal = document.getElementById(MODAL_ID);
     if (modal) {
-      modal.classList.add("b24ql-hidden");
+      if (runtimeOptions.destroyModalOnClose || isSafariUserscriptRuntime) {
+        if (linksEditorNoticeTimer !== null) {
+          window.clearTimeout(linksEditorNoticeTimer);
+          linksEditorNoticeTimer = null;
+        }
+        modal.remove();
+      } else {
+        modal.classList.add("b24ql-hidden");
+      }
     }
     document.documentElement.classList.remove("b24ql-page-locked");
   }
 
   function watchBitrixLayout() {
+    if (runtimeOptions.leanLayoutWatcher || isSafariUserscriptRuntime) {
+      watchBitrixLayoutLean();
+      return;
+    }
+
     let mountScheduled = false;
     let colorSyncScheduled = false;
     const observedThemeTargets = new WeakSet();
@@ -5629,6 +5658,121 @@
     });
     observeThemeTarget(document.documentElement);
     observeThemeTarget(document.body);
+  }
+
+  function watchBitrixLayoutLean() {
+    let mountScheduled = false;
+    let colorSyncScheduled = false;
+    let observedMenuRoot = null;
+    let menuObserver = null;
+    let healthCheckTimer = null;
+    const observedThemeTargets = new WeakSet();
+
+    const themeObserver = new MutationObserver(function (mutations) {
+      if (colorSyncScheduled || !mutations.some(isPortalThemeMutation)) {
+        return;
+      }
+      colorSyncScheduled = true;
+      window.requestAnimationFrame(function () {
+        colorSyncScheduled = false;
+        const leftMenu = findLeftMenuContainer();
+        const menuItem = document.getElementById(MENU_ITEM_ID);
+        if (leftMenu && menuItem) {
+          syncMenuItemColor(leftMenu, menuItem);
+        }
+      });
+    });
+
+    function observeThemeTarget(target) {
+      if (!target || observedThemeTargets.has(target)) {
+        return;
+      }
+      observedThemeTargets.add(target);
+      themeObserver.observe(target, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ["class", "style", "data-theme"]
+      });
+    }
+
+    function getMenuObserverRoot(leftMenu) {
+      return leftMenu && (leftMenu.closest("#left-menu") || leftMenu);
+    }
+
+    function observeMenu(leftMenu) {
+      const nextRoot = getMenuObserverRoot(leftMenu);
+      if (nextRoot === observedMenuRoot) {
+        return;
+      }
+      if (menuObserver) {
+        menuObserver.disconnect();
+      }
+      observedMenuRoot = nextRoot;
+      if (!nextRoot) {
+        return;
+      }
+      menuObserver = new MutationObserver(function (mutations) {
+        if (mutations.some(isRelevantLayoutMutation)) {
+          scheduleMount();
+        }
+      });
+      menuObserver.observe(nextRoot, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    function mountAndObserve() {
+      mountScheduled = false;
+      mountButton();
+      observeMenu(findLeftMenuContainer());
+      observeThemeTarget(document.body);
+    }
+
+    function scheduleMount() {
+      if (mountScheduled) {
+        return;
+      }
+      mountScheduled = true;
+      window.requestAnimationFrame(mountAndObserve);
+    }
+
+    function checkMenuHealth() {
+      if (document.hidden) {
+        return;
+      }
+      const menuItem = document.getElementById(MENU_ITEM_ID);
+      const leftMenu = menuItem && menuItem.parentElement;
+      if (!menuItem || !menuItem.isConnected || !leftMenu || !leftMenu.matches(LEFT_MENU_SELECTOR)) {
+        scheduleMount();
+        return;
+      }
+      observeMenu(leftMenu);
+    }
+
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        scheduleMount();
+      }
+    }
+
+    function cleanup() {
+      if (menuObserver) {
+        menuObserver.disconnect();
+      }
+      themeObserver.disconnect();
+      if (healthCheckTimer !== null) {
+        window.clearInterval(healthCheckTimer);
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }
+
+    observeThemeTarget(document.documentElement);
+    observeThemeTarget(document.body);
+    observeMenu(findLeftMenuContainer());
+    healthCheckTimer = window.setInterval(checkMenuHealth, 5000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", cleanup, { once: true });
   }
 
   function isPortalThemeMutation(mutation) {

@@ -39,6 +39,9 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
   const page = await context.newPage();
   page.on("pageerror", function (error) { errors.push(error.message); });
   await page.goto("https://bitrix24test.ostec-group.ru/stream/");
+  await page.addScriptTag({
+    content: "globalThis.B24QL_RUNTIME_OPTIONS = { destroyModalOnClose: true, leanLayoutWatcher: true };"
+  });
   for (const css of [
     "vendor/ui.buttons.bundle.min.css",
     "vendor/ui.forms.min.css",
@@ -114,6 +117,12 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
   assert.ok(
     repeatedOpenCloseLayoutChecks <= 24,
     `open/close cycles caused ${repeatedOpenCloseLayoutChecks} left-menu layout scans`
+  );
+  assert.equal(await page.locator("#b24ql-modal").count(), 0);
+  assert.equal(
+    await page.locator("[id^='b24ql'], [class*='b24ql']").count() <= 8,
+    true,
+    "closed Safari modal retained extension DOM"
   );
 
   await page.evaluate(function () {

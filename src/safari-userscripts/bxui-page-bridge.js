@@ -1,18 +1,3 @@
-// ==UserScript==
-// @name         Bitrix24 Быстрые ссылки BX.UI bridge (Safari)
-// @namespace    https://github.com/SStorozhuk/B24-Quick-Links-Extension
-// @version      1.0.2
-// @description  Мост к компонентам BX.UI порталов Bitrix24.
-// @match        https://bitrix24.ostec-group.ru/*
-// @match        https://bitrix24test.ostec-group.ru/*
-// @match        https://bitrix24develop.ostec-group.ru/*
-// @run-at       document-end
-// @inject-into  page
-// @weight       900
-// @noframes
-// @grant        none
-// ==/UserScript==
-/* ../safari-userscripts/bxui-page-bridge.js */
 (function () {
   "use strict";
 
@@ -114,7 +99,3 @@
   window.addEventListener("pagehide", cleanup, { once: true });
   document.dispatchEvent(new Event("b24ql-ui-ready"));
 })();
-
-
-// Handles the rare case where the content script initialized first.
-document.dispatchEvent(new Event("b24ql-ui-render"));

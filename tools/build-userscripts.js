@@ -12,9 +12,12 @@ const outputDir = path.join(root, "releases", "1.0", "safari");
 const PORTALS = [
   "https://bitrix24.ostec-group.ru/*",
   "https://bitrix24test.ostec-group.ru/*",
-  "https://bitrix24develop.ostec-group.ru/*"
+  "https://bitrix24develop.ostec-group.ru/*",
+  "https://bitrix24.selectica.ru/*",
+  "https://bitrix24test.selectica.ru/*",
+  "https://bitrix24develop.selectica.ru/*"
 ];
-const VERSION = "1.0.3";
+const VERSION = "1.0.4";
 
 const cssFiles = [
   "vendor/ui.buttons.bundle.min.css",

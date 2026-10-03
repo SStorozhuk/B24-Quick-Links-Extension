@@ -1,13 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Bitrix24 Быстрые ссылки",
-  "description": "Быстрые ссылки с интерфейсом Bitrix24 для порталов OSTEC.",
+  "description": "Быстрые ссылки с интерфейсом Bitrix24 для корпоративных порталов.",
   "version": "1.0",
   "permissions": [],
   "host_permissions": [
     "https://bitrix24.ostec-group.ru/*",
     "https://bitrix24test.ostec-group.ru/*",
-    "https://bitrix24develop.ostec-group.ru/*"
+    "https://bitrix24develop.ostec-group.ru/*",
+    "https://bitrix24.selectica.ru/*",
+    "https://bitrix24test.selectica.ru/*",
+    "https://bitrix24develop.selectica.ru/*"
   ],
   "browser_specific_settings": {
     "gecko": {
@@ -20,7 +23,10 @@
       "matches": [
         "https://bitrix24.ostec-group.ru/*",
         "https://bitrix24test.ostec-group.ru/*",
-        "https://bitrix24develop.ostec-group.ru/*"
+        "https://bitrix24develop.ostec-group.ru/*",
+        "https://bitrix24.selectica.ru/*",
+        "https://bitrix24test.selectica.ru/*",
+        "https://bitrix24develop.selectica.ru/*"
       ],
       "js": [
         "vendor/bxui-init.js",
@@ -34,7 +40,10 @@
       "matches": [
         "https://bitrix24.ostec-group.ru/*",
         "https://bitrix24test.ostec-group.ru/*",
-        "https://bitrix24develop.ostec-group.ru/*"
+        "https://bitrix24develop.ostec-group.ru/*",
+        "https://bitrix24.selectica.ru/*",
+        "https://bitrix24test.selectica.ru/*",
+        "https://bitrix24develop.selectica.ru/*"
       ],
       "css": [
         "vendor/ui.buttons.bundle.min.css",

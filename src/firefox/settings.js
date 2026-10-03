@@ -26,7 +26,10 @@
   const portalHosts = [
     "bitrix24.ostec-group.ru",
     "bitrix24test.ostec-group.ru",
-    "bitrix24develop.ostec-group.ru"
+    "bitrix24develop.ostec-group.ru",
+    "bitrix24.selectica.ru",
+    "bitrix24test.selectica.ru",
+    "bitrix24develop.selectica.ru"
   ];
 
   /*

@@ -20,6 +20,9 @@
 - `https://bitrix24.ostec-group.ru/`
 - `https://bitrix24test.ostec-group.ru/`
 - `https://bitrix24develop.ostec-group.ru/`
+- `https://bitrix24.selectica.ru/`
+- `https://bitrix24test.selectica.ru/`
+- `https://bitrix24develop.selectica.ru/`
 
 Одна конфигурация автоматически подставляет домен текущего портала.
 
@@ -59,10 +62,10 @@
 
 ### Safari без Apple Developer Program
 
-Safari-вариант работает через бесплатный менеджер Userscripts и не требует ежедневной переустановки. Сборка поддерживает основной, тестовый и dev-порталы.
+Safari-вариант работает через бесплатный менеджер Userscripts и не требует ежедневной переустановки. Сборка поддерживает основной, тестовый и dev-порталы на доменах OSTEC и Selectica.
 
 1. Установите Userscripts из App Store и включите его расширение в Safari.
-2. Разрешите доступ к `bitrix24.ostec-group.ru`, `bitrix24test.ostec-group.ru` и `bitrix24develop.ostec-group.ru`.
+2. Разрешите доступ к шести доменам из раздела «Поддерживаемые порталы».
 3. Скопируйте оба файла из `releases/1.0/safari` в папку `Save Location`, показанную приложением Userscripts.
 4. Обновите вкладку портала.
 

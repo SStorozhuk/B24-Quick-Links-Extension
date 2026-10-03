@@ -14,7 +14,10 @@ const portalHosts = Array.isArray(settings.portalHosts) && settings.portalHosts.
   : [
     "bitrix24.ostec-group.ru",
     "bitrix24test.ostec-group.ru",
-    "bitrix24develop.ostec-group.ru"
+    "bitrix24develop.ostec-group.ru",
+    "bitrix24.selectica.ru",
+    "bitrix24test.selectica.ru",
+    "bitrix24develop.selectica.ru"
   ];
 const ALLOWED_ORIGINS = new Set(portalHosts.map(function (host) {
   return "https://" + host;

@@ -11,16 +11,19 @@ Safari-версия состоит из двух userscript-файлов:
 npm run build:safari
 ```
 
-Сборка работает на трех порталах:
+Сборка работает на шести порталах:
 
 - `https://bitrix24.ostec-group.ru/*`;
 - `https://bitrix24test.ostec-group.ru/*`;
-- `https://bitrix24develop.ostec-group.ru/*`.
+- `https://bitrix24develop.ostec-group.ru/*`;
+- `https://bitrix24.selectica.ru/*`;
+- `https://bitrix24test.selectica.ru/*`;
+- `https://bitrix24develop.selectica.ru/*`.
 
 ## Установка
 
 1. Установить Userscripts из App Store и включить расширение в Safari.
-2. Разрешить Userscripts доступ к трем порталам Bitrix24 из списка выше. Доступ ко всем остальным сайтам не требуется.
+2. Разрешить Userscripts доступ к шести порталам Bitrix24 из списка выше. Доступ ко всем остальным сайтам не требуется.
 3. Открыть приложение Userscripts и посмотреть путь `Save Location`.
 4. В Finder открыть этот путь и скопировать в папку `scripts` оба `.user.js` из `releases/1.0/safari`.
 5. Нажать значок Userscripts в Safari и убедиться, что на портале отображаются оба скрипта.

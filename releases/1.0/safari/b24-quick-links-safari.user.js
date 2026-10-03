@@ -1,11 +1,14 @@
 // ==UserScript==
 // @name         Bitrix24 Быстрые ссылки (Safari)
 // @namespace    https://github.com/SStorozhuk/B24-Quick-Links-Extension
-// @version      1.0.3
+// @version      1.0.4
 // @description  Быстрые ссылки Bitrix24 для порталов OSTEC.
 // @match        https://bitrix24.ostec-group.ru/*
 // @match        https://bitrix24test.ostec-group.ru/*
 // @match        https://bitrix24develop.ostec-group.ru/*
+// @match        https://bitrix24.selectica.ru/*
+// @match        https://bitrix24test.selectica.ru/*
+// @match        https://bitrix24develop.selectica.ru/*
 // @run-at       document-end
 // @inject-into  content
 // @weight       100
@@ -116,7 +119,7 @@
     destroyModalOnClose: true,
     leanLayoutWatcher: true
   });
-  console.info("B24 Quick Links: Safari runtime 1.0.3 enabled");
+  console.info("B24 Quick Links: Safari runtime 1.0.4 enabled");
 
 (function (root) {
   "use strict";
@@ -146,7 +149,10 @@
   const portalHosts = [
     "bitrix24.ostec-group.ru",
     "bitrix24test.ostec-group.ru",
-    "bitrix24develop.ostec-group.ru"
+    "bitrix24develop.ostec-group.ru",
+    "bitrix24.selectica.ru",
+    "bitrix24test.selectica.ru",
+    "bitrix24develop.selectica.ru"
   ];
 
   /*

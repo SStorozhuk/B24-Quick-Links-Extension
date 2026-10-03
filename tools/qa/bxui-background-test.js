@@ -64,7 +64,14 @@ function createHarness(promiseApi, failAt) {
     assert.equal(singleResult.ok, true);
     assert.equal(single.calls[0].active, undefined);
 
-    for (const host of ["bitrix24.ostec-group.ru", "bitrix24develop.ostec-group.ru"]) {
+    for (const host of [
+      "bitrix24.ostec-group.ru",
+      "bitrix24test.ostec-group.ru",
+      "bitrix24develop.ostec-group.ru",
+      "bitrix24.selectica.ru",
+      "bitrix24test.selectica.ru",
+      "bitrix24develop.selectica.ru"
+    ]) {
       const portal = createHarness(promiseApi);
       const url = "https://" + host + "/company/";
       const result = await portal.send({ type: "b24ql-open-tab", url });

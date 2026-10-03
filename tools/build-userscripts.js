@@ -14,7 +14,7 @@ const PORTALS = [
   "https://bitrix24test.ostec-group.ru/*",
   "https://bitrix24develop.ostec-group.ru/*"
 ];
-const VERSION = "1.0.2";
+const VERSION = "1.0.3";
 
 const cssFiles = [
   "vendor/ui.buttons.bundle.min.css",
@@ -67,8 +67,7 @@ const SAFARI_STYLE_OVERRIDES = `
 .b24ql-modal button.b24ql-settings-open.ui-btn,
 .b24ql-modal button.b24ql-section-toggle.ui-btn,
 .b24ql-modal button.b24ql-section-open-all.ui-btn,
-.b24ql-modal button.b24ql-favorite-toggle.ui-btn,
-.b24ql-modal button.b24ql-notes-tool.ui-btn {
+.b24ql-modal button.b24ql-favorite-toggle.ui-btn {
   box-sizing: border-box !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -89,9 +88,7 @@ const SAFARI_STYLE_OVERRIDES = `
 .b24ql-modal button.b24ql-section-open-all.ui-btn::before,
 .b24ql-modal button.b24ql-section-open-all.ui-btn::after,
 .b24ql-modal button.b24ql-favorite-toggle.ui-btn::before,
-.b24ql-modal button.b24ql-favorite-toggle.ui-btn::after,
-.b24ql-modal button.b24ql-notes-tool.ui-btn::before,
-.b24ql-modal button.b24ql-notes-tool.ui-btn::after {
+.b24ql-modal button.b24ql-favorite-toggle.ui-btn::after {
   content: none !important;
   display: none !important;
 }
@@ -257,6 +254,12 @@ const SAFARI_STYLE_OVERRIDES = `
   line-height: 24px !important;
 }
 
+/* Safari loads Bitrix button styles after the userscript. Keep disabled
+ * section actions hidden even though their base button rule uses !important. */
+.b24ql-modal button.b24ql-section-open-all.ui-btn.b24ql-hidden {
+  display: none !important;
+}
+
 .b24ql-modal .b24ql-section-open-all-icon {
   display: block !important;
   width: 17px !important;
@@ -317,31 +320,6 @@ const SAFARI_STYLE_OVERRIDES = `
   min-height: 17px !important;
   max-height: 17px !important;
   flex: 0 0 17px !important;
-}
-
-.b24ql-modal button.b24ql-notes-tool.ui-btn {
-  width: 30px !important;
-  min-width: 30px !important;
-  max-width: 30px !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  max-height: 30px !important;
-  border: 0 !important;
-  border-radius: 6px !important;
-  background: transparent !important;
-  color: var(--b24ql-control) !important;
-  line-height: 30px !important;
-}
-
-.b24ql-modal .b24ql-notes-tool.ui-btn svg {
-  display: block !important;
-  width: 19px !important;
-  min-width: 19px !important;
-  max-width: 19px !important;
-  height: 19px !important;
-  min-height: 19px !important;
-  max-height: 19px !important;
-  flex: 0 0 19px !important;
 }
 
 @media (max-width: 700px) {

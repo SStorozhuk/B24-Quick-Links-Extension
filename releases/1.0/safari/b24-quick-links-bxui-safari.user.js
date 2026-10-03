@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bitrix24 Быстрые ссылки BX.UI bridge (Safari)
 // @namespace    https://github.com/SStorozhuk/B24-Quick-Links-Extension
-// @version      1.0.2
+// @version      1.0.3
 // @description  Мост к компонентам BX.UI порталов Bitrix24.
 // @match        https://bitrix24.ostec-group.ru/*
 // @match        https://bitrix24test.ostec-group.ru/*

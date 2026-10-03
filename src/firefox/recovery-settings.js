@@ -8,8 +8,7 @@
     "CRM": true,
     "Настройка CRM": true,
     "Сотрудники": true,
-    "Локальные приложения": true,
-    "Заметки": false
+    "Локальные приложения": true
   },
   "b24ql-favorite-links-v1": [
     "b24ql-1qquh44",

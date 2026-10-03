@@ -21,12 +21,9 @@
   const FAVORITE_LINKS_KEY = "b24ql-favorite-links-v1";
   const OPEN_ALL_SECTIONS_KEY = "b24ql-open-all-sections-v1";
   const CUSTOM_SECTIONS_KEY = "b24ql-custom-sections-v1";
-  const LEGACY_NOTES_STORAGE_KEY = "b24ql-notes-v1";
-  const NOTES_STORAGE_KEY = "b24ql-notes-v2";
   const CONFIG_SCHEMA_KEY = "b24ql-config-schema-v1";
   const CONFIG_SCHEMA_VERSION = 4;
   const TEMPLATE_MODAL_ID = "b24ql-template-modal";
-  const NOTES_SECTION_TITLE = "Заметки";
   const POSITION_SCHEMA_VERSION = 5;
   const LEFT_MENU_SELECTORS = [
     "#left-menu .menu-items",
@@ -47,8 +44,6 @@
     FAVORITE_LINKS_KEY,
     OPEN_ALL_SECTIONS_KEY,
     CUSTOM_SECTIONS_KEY,
-    LEGACY_NOTES_STORAGE_KEY,
-    NOTES_STORAGE_KEY,
     CONFIG_SCHEMA_KEY
   ];
 
@@ -92,8 +87,6 @@
   let subModalStack = [];
   let favoriteLinkIds = readFavoriteLinkIds();
   let templateOpenInNewTab = false;
-  let notesValue = readNotesValue();
-  let notesDirty = false;
   let searchOptionCounter = 0;
   const searchSelectionIndexes = new WeakMap();
   const browserThemeQuery = typeof window.matchMedia === "function"
@@ -169,10 +162,6 @@
     replaceObjectContents(openAllSections, readOpenAllSections());
     favoriteLinkIds = readFavoriteLinkIds();
     themePreference = readThemePreference();
-    if (!notesDirty) {
-      notesValue = readNotesValue();
-    }
-
     const modal = document.getElementById(MODAL_ID);
     if (modal) {
       applyModalTheme(modal);
@@ -499,107 +488,6 @@
 
   function saveCollapsedSections() {
     setStoredValue(COLLAPSED_SECTIONS_KEY, Object.assign({}, collapsedSections));
-  }
-
-  /* Заметки хранятся локально как безопасный HTML и записываются при закрытии окна. */
-  function readNotesValue() {
-    const savedNotes = getStoredValue(NOTES_STORAGE_KEY);
-    if (typeof savedNotes === "string") {
-      return sanitizeNotesHtml(savedNotes);
-    }
-
-    const legacyNotes = getStoredValue(LEGACY_NOTES_STORAGE_KEY);
-    return typeof legacyNotes === "string" ? notesPlainTextToHtml(legacyNotes) : "";
-  }
-
-  function saveNotesIfNeeded() {
-    if (!notesDirty) {
-      return;
-    }
-
-    notesValue = sanitizeNotesHtml(notesValue);
-    setStoredValue(NOTES_STORAGE_KEY, notesValue);
-    notesDirty = false;
-  }
-
-  function notesPlainTextToHtml(value) {
-    const container = document.createElement("div");
-    String(value).split(/\r?\n/).forEach(function (line, index) {
-      if (index > 0) {
-        container.appendChild(document.createElement("br"));
-      }
-      container.appendChild(document.createTextNode(line));
-    });
-    return container.innerHTML;
-  }
-
-  function normalizeNotesUrl(value) {
-    let candidate = typeof value === "string" ? value.trim() : "";
-    if (/^www\./i.test(candidate)) {
-      candidate = "https://" + candidate;
-    }
-
-    try {
-      const parsed = new URL(candidate);
-      return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "";
-    } catch (error) {
-      return "";
-    }
-  }
-
-  function appendSanitizedNotesNode(sourceNode, targetNode) {
-    if (sourceNode.nodeType === Node.TEXT_NODE) {
-      targetNode.appendChild(document.createTextNode(sourceNode.nodeValue || ""));
-      return;
-    }
-
-    if (sourceNode.nodeType !== Node.ELEMENT_NODE) {
-      return;
-    }
-
-    const tagName = sourceNode.tagName.toUpperCase();
-    if (tagName === "SCRIPT" || tagName === "STYLE" || tagName === "IFRAME" || tagName === "OBJECT") {
-      return;
-    }
-
-    const allowedContainers = new Set(["DIV", "P", "OL", "LI"]);
-    let cleanNode = null;
-    if (tagName === "BR") {
-      targetNode.appendChild(document.createElement("br"));
-      return;
-    }
-
-    if (tagName === "B" || tagName === "STRONG") {
-      cleanNode = document.createElement("strong");
-    } else if (tagName === "A") {
-      const href = normalizeNotesUrl(sourceNode.getAttribute("href") || "");
-      if (href) {
-        cleanNode = document.createElement("a");
-        cleanNode.href = href;
-        cleanNode.target = "_blank";
-        cleanNode.rel = "noopener noreferrer";
-      }
-    } else if (allowedContainers.has(tagName)) {
-      cleanNode = document.createElement(tagName.toLowerCase());
-    }
-
-    const childTarget = cleanNode || targetNode;
-    Array.from(sourceNode.childNodes).forEach(function (childNode) {
-      appendSanitizedNotesNode(childNode, childTarget);
-    });
-    if (cleanNode) {
-      targetNode.appendChild(cleanNode);
-    }
-  }
-
-  function sanitizeNotesHtml(value) {
-    const source = document.createElement("div");
-    const target = document.createElement("div");
-    source.innerHTML = typeof value === "string" ? value : "";
-    Array.from(source.childNodes).forEach(function (node) {
-      appendSanitizedNotesNode(node, target);
-    });
-    return (target.textContent || target.querySelector("ol")) ? target.innerHTML : "";
   }
 
   function readThemePreference() {
@@ -1588,8 +1476,8 @@
 
   function renderMainContent(content) {
     content.replaceChildren();
+    content.dataset.b24qlSearchActive = "false";
     content.appendChild(createSearchBox(SEARCH_INPUT_ID, "Поиск по быстрым ссылкам", applyMainSearch));
-    content.appendChild(createNotesSection());
     content.appendChild(createFavoritesSection());
     content.appendChild(createSearchResultsSection());
 
@@ -2260,9 +2148,9 @@
     }
 
     list.replaceChildren();
-    [NOTES_SECTION_TITLE].concat(sections.map(function (section) {
+    sections.map(function (section) {
       return section.title;
-    })).forEach(function (sectionTitle) {
+    }).forEach(function (sectionTitle) {
       const row = createSettingsRow(sectionTitle);
       row.classList.add("b24ql-collapsed-sections-settings-row");
       row.appendChild(createCollapsedSectionChoiceGroup(sectionTitle));
@@ -2361,8 +2249,7 @@
       collapsedSections,
       getBooleanSettingsForSections(
         linksEditorDraftCollapsedSections,
-        DEFAULT_COLLAPSED_SECTIONS,
-        [NOTES_SECTION_TITLE]
+        DEFAULT_COLLAPSED_SECTIONS
       )
     );
     replaceObjectContents(sessionCollapsedSections, collapsedSections);
@@ -2938,7 +2825,7 @@
     linksEditorDraftCollapsedSections = getImportedBooleanSettings(
       payload && payload.collapsedSections,
       DEFAULT_COLLAPSED_SECTIONS,
-      [{ title: NOTES_SECTION_TITLE }].concat(importedSections)
+      importedSections
     );
     linksEditorDraftOpenAllSections = getImportedBooleanSettings(
       payload && payload.openAllSections,
@@ -3006,7 +2893,6 @@
     exportSections.forEach(function (section) {
       result[section.title] = exportCollapsedSections[section.title] === true;
     });
-    result[NOTES_SECTION_TITLE] = exportCollapsedSections[NOTES_SECTION_TITLE] === true;
     return result;
   }
 
@@ -3063,515 +2949,6 @@
     wrap.appendChild(input);
     wrap.appendChild(clearButton);
     return wrap;
-  }
-
-  /* Локальный редактор заметок: безопасные ссылки и нумерованные списки до трех уровней. */
-  function updateNotesValueFromEditor(editor) {
-    notesValue = (editor.textContent || editor.querySelector("ol")) ? editor.innerHTML : "";
-    notesDirty = true;
-  }
-
-  function getNotesListItem(node, editor) {
-    const element = node && node.nodeType === Node.ELEMENT_NODE ? node : node && node.parentElement;
-    if (!element) {
-      return null;
-    }
-
-    const item = element.closest("li");
-    return item && editor.contains(item) ? item : null;
-  }
-
-  function getNotesListDepth(item, editor) {
-    let depth = 0;
-    let current = item.parentElement;
-    while (current && current !== editor) {
-      if (current.tagName === "OL") {
-        depth += 1;
-      }
-      current = current.parentElement;
-    }
-    return depth;
-  }
-
-  /* Firefox иногда создает вложенный OL рядом с LI; приводим разметку к валидной. */
-  function normalizeNotesListStructure(editor) {
-    let changed = false;
-    Array.from(editor.querySelectorAll("ol > ol")).forEach(function (nestedList) {
-      const previousItem = nestedList.previousElementSibling;
-      if (previousItem && previousItem.tagName === "LI") {
-        previousItem.appendChild(nestedList);
-        changed = true;
-      }
-    });
-    return changed;
-  }
-
-  function restoreNotesCaret(textNode, offset) {
-    const selection = window.getSelection();
-    if (!selection) {
-      return;
-    }
-
-    const range = document.createRange();
-    range.setStart(textNode, Math.min(offset, textNode.nodeValue.length));
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  }
-
-  function linkifyNotesUrlBeforeCaret(editor) {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || !selection.isCollapsed) {
-      return false;
-    }
-
-    const range = selection.getRangeAt(0);
-    const textNode = range.startContainer;
-    const offset = range.startOffset;
-    if (textNode.nodeType !== Node.TEXT_NODE || !editor.contains(textNode)) {
-      return false;
-    }
-
-    const parentLink = textNode.parentElement && textNode.parentElement.closest("a");
-    if (parentLink && editor.contains(parentLink)) {
-      return false;
-    }
-
-    const typedText = textNode.nodeValue.slice(0, offset);
-    const delimiter = typedText.slice(-1);
-    if (!/[\s)\]}>.,;!?]/.test(delimiter)) {
-      return false;
-    }
-
-    const beforeDelimiter = typedText.slice(0, -1);
-    const match = beforeDelimiter.match(/(?:https?:\/\/|www\.)[^\s<>"'()[\]{}]+$/i);
-    if (!match) {
-      return false;
-    }
-
-    const linkText = match[0];
-    const href = normalizeNotesUrl(linkText);
-    if (!href) {
-      return false;
-    }
-
-    if (delimiter === ".") {
-      const host = new URL(href).hostname;
-      if (!host.includes(".") && host !== "localhost") {
-        return false;
-      }
-    }
-
-    const startIndex = beforeDelimiter.length - linkText.length;
-    const textAfterCaret = textNode.nodeValue.slice(offset);
-    const fragment = document.createDocumentFragment();
-    fragment.appendChild(document.createTextNode(textNode.nodeValue.slice(0, startIndex)));
-
-    const anchor = document.createElement("a");
-    anchor.href = href;
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
-    anchor.textContent = linkText;
-    fragment.appendChild(anchor);
-
-    const trailingText = document.createTextNode(delimiter + textAfterCaret);
-    fragment.appendChild(trailingText);
-    textNode.parentNode.replaceChild(fragment, textNode);
-    restoreNotesCaret(trailingText, 1);
-    return true;
-  }
-
-  function insertPlainTextIntoNotes(event) {
-    const clipboard = event.clipboardData;
-    if (!clipboard) {
-      return;
-    }
-
-    event.preventDefault();
-    document.execCommand("insertText", false, clipboard.getData("text/plain"));
-  }
-
-  function getCurrentNotesListItem(editor) {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      return null;
-    }
-
-    const range = selection.getRangeAt(0);
-    const directItem = getNotesListItem(range.startContainer, editor);
-    if (directItem || !range.collapsed || range.startContainer.nodeType !== Node.ELEMENT_NODE) {
-      return directItem;
-    }
-
-    /* Firefox может поставить курсор на границу OL/DIV, а не внутрь пустого LI. */
-    const container = range.startContainer;
-    const nearbyNodes = [];
-    if (range.startOffset < container.childNodes.length) {
-      nearbyNodes.push(container.childNodes[range.startOffset]);
-    }
-    if (range.startOffset > 0) {
-      nearbyNodes.push(container.childNodes[range.startOffset - 1]);
-    }
-
-    for (const node of nearbyNodes) {
-      const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-      if (!element || !editor.contains(element)) {
-        continue;
-      }
-
-      const nearbyItem = element.tagName === "LI"
-        ? element
-        : element.querySelector("li:only-child");
-      if (nearbyItem && notesListItemIsEmpty(nearbyItem)) {
-        return nearbyItem;
-      }
-    }
-
-    return null;
-  }
-
-  function notesListItemIsEmpty(item) {
-    const copy = item.cloneNode(true);
-    Array.from(copy.querySelectorAll("ol")).forEach(function (list) {
-      list.remove();
-    });
-    return copy.textContent.replace(/[\u00a0\u200b-\u200d\ufeff]/g, "").trim().length === 0;
-  }
-
-  function exitCurrentEmptyNotesList(event, editor) {
-    const item = getCurrentNotesListItem(editor);
-    if (!item || !exitEmptyNotesListItem(editor, item)) {
-      return false;
-    }
-
-    event.preventDefault();
-    return true;
-  }
-
-  function placeNotesCaretAtStart(node) {
-    const selection = window.getSelection();
-    if (!selection) {
-      return;
-    }
-
-    const range = document.createRange();
-    range.setStart(node, 0);
-    range.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  }
-
-  function placeNotesCaretAtEnd(node) {
-    const selection = window.getSelection();
-    if (!selection) {
-      return;
-    }
-
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    range.collapse(false);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  }
-
-  function indentNotesListItem(item) {
-    const previousItem = item.previousElementSibling;
-    if (!previousItem || previousItem.tagName !== "LI") {
-      return false;
-    }
-
-    let nestedList = Array.from(previousItem.children).find(function (child) {
-      return child.tagName === "OL";
-    });
-    if (!nestedList) {
-      nestedList = document.createElement("ol");
-      previousItem.appendChild(nestedList);
-    }
-
-    nestedList.appendChild(item);
-    placeNotesCaretAtEnd(item);
-    return true;
-  }
-
-  function getRootNotesList(item, editor) {
-    let list = item.parentElement;
-    let rootList = null;
-
-    while (list && list !== editor) {
-      if (list.tagName === "OL") {
-        rootList = list;
-      }
-      list = list.parentElement;
-    }
-
-    return rootList;
-  }
-
-  function getNotesRootBlock(rootList, editor) {
-    let block = rootList;
-    while (block && block.parentElement !== editor) {
-      block = block.parentElement;
-    }
-    return block && block.parentElement === editor ? block : null;
-  }
-
-  function getRootNotesListItem(item, rootList) {
-    let rootItem = item;
-    while (rootItem && rootItem.parentElement !== rootList) {
-      rootItem = rootItem.parentElement.closest("li");
-    }
-    return rootItem;
-  }
-
-  /* Двойной Enter завершает список с любого уровня и создает обычную строку. */
-  function exitEmptyNotesListItem(editor, item) {
-    if (!notesListItemIsEmpty(item)) {
-      return false;
-    }
-
-    const rootList = getRootNotesList(item, editor);
-    const rootItem = rootList && getRootNotesListItem(item, rootList);
-    const rootBlock = rootList && getNotesRootBlock(rootList, editor);
-    if (!rootList || !rootItem || !rootBlock) {
-      return false;
-    }
-
-    const followingList = rootList.cloneNode(false);
-    let followingItem = rootItem.nextElementSibling;
-    while (followingItem) {
-      const nextItem = followingItem.nextElementSibling;
-      followingList.appendChild(followingItem);
-      followingItem = nextItem;
-    }
-
-    const line = document.createElement("div");
-    line.appendChild(document.createElement("br"));
-    let parentList = item.parentElement;
-    item.remove();
-    while (parentList && parentList !== rootList && parentList.children.length === 0) {
-      const ownerItem = parentList.parentElement;
-      parentList.remove();
-      parentList = ownerItem && ownerItem.parentElement && ownerItem.parentElement.tagName === "OL"
-        ? ownerItem.parentElement
-        : null;
-    }
-    if (rootItem !== item && !(rootItem.textContent || "").trim()) {
-      rootItem.remove();
-    }
-
-    const insertAfter = rootBlock.nextSibling;
-    editor.insertBefore(line, insertAfter);
-    if (followingList.children.length > 0) {
-      editor.insertBefore(followingList, line.nextSibling);
-    }
-    if (rootList.children.length === 0) {
-      rootList.remove();
-      if (rootBlock !== rootList && !(rootBlock.textContent || "").trim() && !rootBlock.querySelector("ol, ul, br")) {
-        rootBlock.remove();
-      }
-    }
-
-    placeNotesCaretAtStart(line);
-    updateNotesValueFromEditor(editor);
-    return true;
-  }
-
-  function getNotesStrongElement(node, editor) {
-    const element = node && node.nodeType === Node.ELEMENT_NODE ? node : node && node.parentElement;
-    const strong = element && element.closest("strong");
-    return strong && editor.contains(strong) ? strong : null;
-  }
-
-  /* Жирное начертание задается вручную: Firefox считает вес 500 уже жирным. */
-  function toggleNotesBold(editor) {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-      return false;
-    }
-
-    const range = selection.getRangeAt(0);
-    if (!editor.contains(range.commonAncestorContainer)) {
-      return false;
-    }
-
-    const startStrong = getNotesStrongElement(range.startContainer, editor);
-    const endStrong = getNotesStrongElement(range.endContainer, editor);
-    if (startStrong && startStrong === endStrong) {
-      const parent = startStrong.parentNode;
-      while (startStrong.firstChild) {
-        parent.insertBefore(startStrong.firstChild, startStrong);
-      }
-      startStrong.remove();
-      parent.normalize();
-      return true;
-    }
-
-    const fragment = range.extractContents();
-    Array.from(fragment.querySelectorAll("strong")).forEach(function (strong) {
-      strong.replaceWith.apply(strong, Array.from(strong.childNodes));
-    });
-    const strong = document.createElement("strong");
-    strong.appendChild(fragment);
-    range.insertNode(strong);
-    range.selectNodeContents(strong);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    return true;
-  }
-
-  function createNotesBoldButton(editor) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "b24ql-notes-tool b24ql-notes-bold-tool ui-btn ui-btn-xs ui-btn-light-border";
-    button.title = "Жирный";
-    button.setAttribute("aria-label", "Жирный");
-    button.innerHTML = '<strong aria-hidden="true">B</strong>';
-    button.addEventListener("mousedown", function (event) {
-      event.preventDefault();
-    });
-    button.addEventListener("click", function () {
-      editor.focus();
-      if (toggleNotesBold(editor)) {
-        updateNotesValueFromEditor(editor);
-      }
-    });
-    return button;
-  }
-
-  function createNotesListButton(editor) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "b24ql-notes-tool ui-btn ui-btn-xs ui-btn-light-border";
-    button.title = "Нумерованный список";
-    button.setAttribute("aria-label", "Нумерованный список");
-    button.innerHTML = [
-      '<svg viewBox="0 0 24 24" aria-hidden="true">',
-      '<path d="M9 6h11M9 12h11M9 18h11"/>',
-      '<path d="M4 5h1v3M3.5 8H6M3.5 13c.3-.7.8-1 1.4-1 .7 0 1.1.4 1.1 1 0 .5-.3.8-1 1.4L3.5 16H6M3.5 18.5h1.4c.7 0 1.1.4 1.1 1s-.4 1-1.1 1H3.5"/>',
-      '</svg>'
-    ].join("");
-    button.addEventListener("mousedown", function (event) {
-      event.preventDefault();
-    });
-    button.addEventListener("click", function () {
-      editor.focus();
-      document.execCommand("insertOrderedList", false, null);
-      updateNotesValueFromEditor(editor);
-    });
-    return button;
-  }
-
-  function createNotesSection() {
-    const sectionNode = document.createElement("section");
-    sectionNode.className = "b24ql-section b24ql-notes-section";
-    sectionNode.dataset.sectionTitle = NOTES_SECTION_TITLE;
-    if (sessionCollapsedSections[NOTES_SECTION_TITLE]) {
-      sectionNode.classList.add("b24ql-section-collapsed");
-    }
-
-    const heading = document.createElement("div");
-    heading.className = "b24ql-section-heading";
-
-    const dot = document.createElement("span");
-    dot.className = "b24ql-section-dot";
-    dot.setAttribute("aria-hidden", "true");
-
-    const title = document.createElement("h3");
-    title.textContent = NOTES_SECTION_TITLE;
-
-    const toggleButton = document.createElement("button");
-    toggleButton.type = "button";
-    toggleButton.className = "b24ql-section-toggle ui-btn ui-btn-xs ui-btn-light-border";
-    toggleButton.innerHTML = '<span class="b24ql-section-toggle-icon" aria-hidden="true"></span>';
-
-    const body = document.createElement("div");
-    body.className = "b24ql-notes-body";
-    body.id = "b24ql-notes-body";
-
-    const toolbar = document.createElement("div");
-    toolbar.className = "b24ql-notes-toolbar";
-
-    const editor = document.createElement("div");
-    editor.className = "b24ql-notes-input ui-ctl-element";
-    editor.contentEditable = "true";
-    editor.innerHTML = sanitizeNotesHtml(notesValue);
-    if (normalizeNotesListStructure(editor)) {
-      updateNotesValueFromEditor(editor);
-    }
-    editor.dataset.placeholder = "Введите заметку";
-    editor.setAttribute("role", "textbox");
-    editor.setAttribute("aria-label", "Заметки");
-    editor.setAttribute("aria-multiline", "true");
-    editor.setAttribute("spellcheck", "true");
-    editor.addEventListener("input", function () {
-      normalizeNotesListStructure(editor);
-      linkifyNotesUrlBeforeCaret(editor);
-      updateNotesValueFromEditor(editor);
-    });
-    editor.addEventListener("paste", insertPlainTextIntoNotes);
-    editor.addEventListener("keydown", function (event) {
-      const item = getCurrentNotesListItem(editor);
-      if (event.key === "Enter" && !event.shiftKey) {
-        exitCurrentEmptyNotesList(event, editor);
-        return;
-      }
-
-      if (event.key !== "Tab" || event.shiftKey) {
-        return;
-      }
-
-      if (!item) {
-        return;
-      }
-
-      event.preventDefault();
-      if (getNotesListDepth(item, editor) >= 3) {
-        return;
-      }
-
-      if (!indentNotesListItem(item)) {
-        return;
-      }
-      updateNotesValueFromEditor(editor);
-    });
-    /* beforeinput страхует Firefox, если keydown пришел до обновления позиции курсора. */
-    editor.addEventListener("beforeinput", function (event) {
-      if (event.inputType === "insertParagraph") {
-        exitCurrentEmptyNotesList(event, editor);
-      }
-    });
-    editor.addEventListener("click", function (event) {
-      const link = event.target.closest("a");
-      if (!link || !editor.contains(link)) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      window.open(link.href, "_blank", "noopener,noreferrer");
-    });
-
-    toggleButton.setAttribute("aria-controls", body.id);
-    updateSectionToggle(toggleButton, NOTES_SECTION_TITLE, sessionCollapsedSections[NOTES_SECTION_TITLE]);
-    toggleButton.addEventListener("click", function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleSection(sectionNode, toggleButton, NOTES_SECTION_TITLE);
-    });
-
-    heading.appendChild(dot);
-    heading.appendChild(title);
-    heading.appendChild(toggleButton);
-    toolbar.appendChild(createNotesBoldButton(editor));
-    toolbar.appendChild(createNotesListButton(editor));
-    body.appendChild(toolbar);
-    const editorControl = document.createElement("div");
-    editorControl.className = "b24ql-notes-control ui-ctl ui-ctl-textarea ui-ctl-w100";
-    editorControl.appendChild(editor);
-    body.appendChild(editorControl);
-    sectionNode.appendChild(heading);
-    sectionNode.appendChild(body);
-    return sectionNode;
   }
 
   function createCounter(value) {
@@ -3734,6 +3111,7 @@
     sectionNode.className = "b24ql-section b24ql-source-section";
     sectionNode.dataset.totalCount = String(section.links.length);
     sectionNode.dataset.sectionTitle = section.title;
+    sectionNode.dataset.sectionIndex = String(index);
     if (sessionCollapsedSections[section.title]) {
       sectionNode.classList.add("b24ql-section-collapsed");
     }
@@ -4246,6 +3624,35 @@
     }
   }
 
+  /* Во время поиска исходные кнопки удаляются из DOM, чтобы не держать второй
+   * скрытый набор элементов и обработчиков рядом с результатами поиска. */
+  function clearMainSourceLinks(modal) {
+    Array.from(modal.querySelectorAll(".b24ql-source-section .b24ql-link-grid")).forEach(function (grid) {
+      grid.replaceChildren();
+    });
+
+    const favoritesGrid = modal.querySelector("#b24ql-favorites-grid");
+    if (favoritesGrid) {
+      favoritesGrid.replaceChildren();
+    }
+  }
+
+  function restoreMainSourceLinks(modal) {
+    Array.from(modal.querySelectorAll(".b24ql-source-section")).forEach(function (sectionNode) {
+      const sectionIndex = Number(sectionNode.dataset.sectionIndex);
+      const section = Number.isInteger(sectionIndex) ? sections[sectionIndex] : null;
+      const grid = sectionNode.querySelector(".b24ql-link-grid");
+      if (!section || !grid) {
+        return;
+      }
+
+      grid.replaceChildren();
+      section.links.forEach(function (link) {
+        grid.appendChild(createLinkItem(link));
+      });
+    });
+  }
+
   function applyMainSearch(value) {
     const modal = document.getElementById(MODAL_ID);
     if (!modal) {
@@ -4258,8 +3665,13 @@
     const searchResultsCount = searchResults ? searchResults.querySelector(".b24ql-section-count") : null;
     const favoritesSection = modal.querySelector(".b24ql-favorites-section");
     const empty = modal.querySelector(".b24ql-empty");
+    const mainContent = modal.querySelector(".b24ql-main-content");
 
     if (query) {
+      if (mainContent && mainContent.dataset.b24qlSearchActive !== "true") {
+        clearMainSourceLinks(modal);
+        mainContent.dataset.b24qlSearchActive = "true";
+      }
       const results = getFlatSearchResults(query);
 
       Array.from(modal.querySelectorAll(".b24ql-source-section")).forEach(function (sectionNode) {
@@ -4302,6 +3714,10 @@
     }
     if (empty) {
       empty.classList.add("b24ql-hidden");
+    }
+    if (mainContent && mainContent.dataset.b24qlSearchActive === "true") {
+      restoreMainSourceLinks(modal);
+      mainContent.dataset.b24qlSearchActive = "false";
     }
     renderFavoritesSection();
 
@@ -4422,7 +3838,6 @@
 
   /* Обычный клик закрывает окно и обходит внутреннюю SPA-навигацию Bitrix24. */
   async function navigateDirectLinkInCurrentTab(url) {
-    saveNotesIfNeeded();
     await closeModal(true);
     window.location.assign(getPortalUrl(url));
   }
@@ -4859,7 +4274,6 @@
       return;
     }
 
-    saveNotesIfNeeded();
     closeTemplateModal();
     closeSubModal(true);
     const modal = document.getElementById(MODAL_ID);
@@ -5018,8 +4432,6 @@
       browserThemeQuery.addListener(handleBrowserThemeChange);
     }
   }
-
-  window.addEventListener("pagehide", saveNotesIfNeeded);
 
   migrateStoredConfiguration();
   applyStoredState();

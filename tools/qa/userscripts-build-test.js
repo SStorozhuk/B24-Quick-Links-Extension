@@ -29,6 +29,8 @@ assert.match(main, /\.b24ql-modal \.b24ql-template-form \{[\s\S]*?padding: 24px 
 assert.match(main, /\.b24ql-modal \.b24ql-template-actions \{[\s\S]*?flex-wrap: wrap !important/);
 assert.match(main, /\.b24ql-modal label\.b24ql-switch-option > \.b24ql-switch-track::before \{[\s\S]*?font-size: 8px !important[\s\S]*?line-height: 12px !important/);
 assert.match(main, /\.b24ql-modal \.b24ql-switch-option input:checked \+ \.b24ql-switch-track::after \{[\s\S]*?translateX\(32px\) !important/);
+assert.match(main, /button\.b24ql-section-open-all\.ui-btn\.b24ql-hidden \{[\s\S]*?display: none !important/);
+assert.doesNotMatch(main, /b24ql-notes-/);
 assert.match(main, /data:image\/svg\+xml;base64,/);
 assert.doesNotMatch(main, /url\(\\?"vendor\/images\/search\.svg\\?"\)/);
 
@@ -95,8 +97,11 @@ function plain(value) {
 }
 
 (async function () {
-  await setStorage({ notes: "Тест", theme: "dark" });
-  assert.deepEqual(plain(await getStorage(["notes", "theme"])), { notes: "Тест", theme: "dark" });
+  await setStorage({ collapsed: { CRM: true }, theme: "dark" });
+  assert.deepEqual(
+    plain(await getStorage(["collapsed", "theme"])),
+    { collapsed: { CRM: true }, theme: "dark" }
+  );
 
   assert.deepEqual(
     plain(await sendMessage({ type: "b24ql-open-tab", url: "https://bitrix24test.ostec-group.ru/crm/" })),

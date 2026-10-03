@@ -201,7 +201,7 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
   await page.waitForTimeout(450);
   assert.equal(await page.locator(".b24ql-main-content .b24ql-search.ui-ctl").count(), 1);
   assert.equal(await page.locator(".b24ql-section-count.ui-counter").count() > 0, true);
-  assert.equal(await page.locator(".b24ql-notes-input.ui-ctl-element").count(), 1);
+  assert.equal(await page.locator(".b24ql-notes-section, .b24ql-notes-input").count(), 0);
   const mainPanelBox = await page.locator("#b24ql-modal > .b24ql-panel").boundingBox();
   assert.equal(mainPanelBox.height >= 850, true);
   assert.equal(mainPanelBox.x >= 300, true);
@@ -219,11 +219,6 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
     const innerBox = await inner.boundingBox();
     return outerBox.y + outerBox.height - innerBox.y - innerBox.height;
   };
-  const notesGap = await bottomGap(
-    page.locator(".b24ql-notes-section"),
-    page.locator(".b24ql-notes-input")
-  );
-  assert.equal(notesGap <= 18, true, `notes bottom gap: ${notesGap}`);
   const collapsedSection = page.locator(".b24ql-source-section.b24ql-section-collapsed").first();
   const collapsedGap = await bottomGap(collapsedSection, collapsedSection.locator(".b24ql-section-heading"));
   assert.equal(collapsedGap <= 2, true, `collapsed bottom gap: ${collapsedGap}`);
@@ -234,37 +229,15 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
     panel.getAnimations()[0].effect.getKeyframes()[0].transform.includes("translateY")), true);
   await page.screenshot({ path: "/private/tmp/b24ql-light.png" });
 
-  const notes = page.locator(".b24ql-notes-input");
-  await notes.fill("Проверка заметок");
-  assert.equal(await notes.textContent(), "Проверка заметок");
-  const noteListStyles = await notes.evaluate(editor => {
-    editor.innerHTML = "<ol><li>Первый</li><li>Второй<ol><li>Вложенный<ol><li>Третий уровень</li></ol></li></ol></li></ol><div><ol><li>Новый список</li></ol></div>";
-    const rootItems = [...editor.querySelectorAll("ol")].filter(list => !list.parentElement.closest("ol"));
-    const secondItem = rootItems[1].querySelector("li");
-    const nestedItem = rootItems[0].querySelector("li > ol > li");
-    const thirdItem = rootItems[0].querySelector("li > ol > li > ol > li");
-    return {
-      rootCount: rootItems.length,
-      rootMarker: getComputedStyle(secondItem, "::before").content,
-      nestedMarker: getComputedStyle(nestedItem, "::before").content,
-      thirdMarker: getComputedStyle(thirdItem, "::before").content,
-      rootIndent: getComputedStyle(rootItems[0]).paddingLeft,
-      secondIndent: getComputedStyle(rootItems[1]).paddingLeft
-    };
-  });
-  assert.equal(noteListStyles.rootCount, 2);
-  assert.equal(noteListStyles.rootMarker.includes("level-1"), true, JSON.stringify(noteListStyles));
-  assert.equal(noteListStyles.rootMarker.includes("level-2"), false, JSON.stringify(noteListStyles));
-  assert.equal(noteListStyles.nestedMarker.includes("level-2"), true, JSON.stringify(noteListStyles));
-  assert.equal(noteListStyles.nestedMarker.includes("level-3"), false, JSON.stringify(noteListStyles));
-  assert.equal(noteListStyles.thirdMarker.includes("level-3"), true, JSON.stringify(noteListStyles));
-  assert.equal(noteListStyles.secondIndent, noteListStyles.rootIndent);
-  await notes.fill("");
-
   const search = page.locator("#b24ql-search");
+  const sourceLinkCount = await page.locator(".b24ql-source-section .b24ql-link").count();
+  assert.equal(sourceLinkCount > 0, true);
   await search.fill("контакт");
+  assert.equal(await page.locator(".b24ql-source-section .b24ql-link").count(), 0);
+  assert.equal(await page.locator("#b24ql-favorites-grid .b24ql-link").count(), 0);
   assert.ok((await page.locator("#b24ql-search-results-grid .b24ql-link-label").allTextContents()).some(text => /контакт/i.test(text)));
   await search.fill("");
+  assert.equal(await page.locator(".b24ql-source-section .b24ql-link").count(), sourceLinkCount);
 
   const projectSection = page.locator('.b24ql-source-section[data-section-title="Проекты"]');
   await projectSection.locator(".b24ql-favorite-toggle").first().click();
@@ -318,12 +291,32 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
   assert.equal(await settingsAction.evaluate(button => getComputedStyle(button).color), "rgb(231, 238, 246)");
   await page.screenshot({ path: "/private/tmp/b24ql-dark-settings.png" });
   await page.locator(".b24ql-settings-main-view button", { hasText: "Настроить" }).first().click();
-  const collapsedSwitch = page.locator(".b24ql-collapsed-sections-view .b24ql-switch-option").first();
+  const collapsedSwitch = page.locator(".b24ql-collapsed-sections-settings-row")
+    .filter({ has: page.getByText("CRM", { exact: true }) })
+    .locator(".b24ql-switch-option");
   const originalCollapsed = await collapsedSwitch.locator('input[role="switch"]').isChecked();
   await page.screenshot({ path: "/private/tmp/b24ql-switches.png" });
   await collapsedSwitch.click();
   assert.equal(await collapsedSwitch.locator('input[role="switch"]').isChecked(), !originalCollapsed);
-  await collapsedSwitch.click();
+  await page.locator(".b24ql-collapsed-sections-view").getByRole("button", { name: "Назад" }).click();
+  await page.locator("#b24ql-settings-modal .b24ql-close").click();
+  assert.equal(
+    await page.locator('.b24ql-source-section[data-section-title="CRM"]').evaluate(node =>
+      node.classList.contains("b24ql-section-collapsed")),
+    !originalCollapsed
+  );
+  await page.locator("#b24ql-modal > .b24ql-panel .b24ql-close").click();
+  await page.locator("#b24ql-menu-button").click();
+  assert.equal(
+    await page.locator('.b24ql-source-section[data-section-title="CRM"]').evaluate(node =>
+      node.classList.contains("b24ql-section-collapsed")),
+    !originalCollapsed
+  );
+  await page.locator(".b24ql-settings-open").click();
+  await page.locator(".b24ql-settings-main-view button", { hasText: "Настроить" }).first().click();
+  await page.locator(".b24ql-collapsed-sections-settings-row")
+    .filter({ has: page.getByText("CRM", { exact: true }) })
+    .locator(".b24ql-switch-option").click();
   await page.locator(".b24ql-collapsed-sections-view").getByRole("button", { name: "Назад" }).click();
   await page.locator(".b24ql-settings-main-view button", { hasText: "Настроить" }).nth(1).click();
   assert.equal(await page.locator('.b24ql-open-all-view input[role="switch"]').count() > 0, true);

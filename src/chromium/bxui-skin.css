@@ -30,8 +30,7 @@
 .b24ql-modal .b24ql-settings-open.ui-btn,
 .b24ql-modal .b24ql-section-toggle.ui-btn,
 .b24ql-modal .b24ql-section-open-all.ui-btn,
-.b24ql-modal .b24ql-favorite-toggle.ui-btn,
-.b24ql-modal .b24ql-notes-tool.ui-btn {
+.b24ql-modal .b24ql-favorite-toggle.ui-btn {
   --ui-btn-min-width: 0px;
   --ui-btn-padding: 0;
   min-width: 0;
@@ -45,8 +44,7 @@
 .b24ql-modal .b24ql-settings-open.ui-btn:hover,
 .b24ql-modal .b24ql-section-toggle.ui-btn:hover,
 .b24ql-modal .b24ql-section-open-all.ui-btn:hover,
-.b24ql-modal .b24ql-favorite-toggle.ui-btn:hover,
-.b24ql-modal .b24ql-notes-tool.ui-btn:hover {
+.b24ql-modal .b24ql-favorite-toggle.ui-btn:hover {
   border-color: transparent;
   background: var(--b24ql-control-hover-bg);
   color: var(--b24ql-control-hover);
@@ -132,8 +130,7 @@
 }
 
 .b24ql-modal .b24ql-editor-control.ui-ctl,
-.b24ql-modal .b24ql-template-control.ui-ctl,
-.b24ql-modal .b24ql-notes-control.ui-ctl {
+.b24ql-modal .b24ql-template-control.ui-ctl {
   width: 100%;
   min-width: 0;
 }
@@ -162,21 +159,6 @@
   font-size: 14px;
 }
 
-.b24ql-modal .b24ql-notes-control.ui-ctl {
-  --ui-field-size: 36px;
-}
-
-.b24ql-modal .b24ql-notes-input.ui-ctl-element {
-  height: auto;
-  min-height: 104px;
-  max-height: 280px;
-  border-radius: 0 0 5px 5px;
-  border-color: var(--b24ql-border-strong);
-  background: var(--b24ql-panel-2);
-  color: var(--b24ql-text);
-  white-space: pre-wrap;
-}
-
 .b24ql-modal .b24ql-link.ui-btn {
   --ui-btn-min-width: 0px;
   --ui-btn-padding: 9px 42px 9px 12px;
@@ -193,10 +175,6 @@
   text-align: left;
   text-transform: none;
   white-space: normal;
-}
-
-.b24ql-modal .b24ql-notes-section .b24ql-section-toggle.ui-btn {
-  margin-left: auto;
 }
 
 .b24ql-modal .b24ql-link.ui-btn:hover,

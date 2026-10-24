@@ -7,17 +7,12 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const chromiumDir = path.join(root, "src", "chromium");
-const outputDir = path.join(root, "releases", "1.0", "safari");
+const outputDir = path.join(root, "releases", "1.1", "safari");
 
 const PORTALS = [
-  "https://bitrix24.ostec-group.ru/*",
-  "https://bitrix24test.ostec-group.ru/*",
-  "https://bitrix24develop.ostec-group.ru/*",
-  "https://bitrix24.selectica.ru/*",
-  "https://bitrix24test.selectica.ru/*",
-  "https://bitrix24develop.selectica.ru/*"
+  "https://*/*"
 ];
-const VERSION = "1.0.4";
+const VERSION = "1.1.0";
 
 const cssFiles = [
   "vendor/ui.buttons.bundle.min.css",
@@ -387,7 +382,7 @@ function buildMainScript() {
     "@name         Bitrix24 Быстрые ссылки (Safari)",
     "@namespace    https://github.com/SStorozhuk/B24-Quick-Links-Extension",
     `@version      ${VERSION}`,
-    "@description  Быстрые ссылки Bitrix24 для порталов OSTEC.",
+    "@description  Универсальные быстрые ссылки для облачных и коробочных порталов Bitrix24.",
     ...portalMatches(),
     "@run-at       document-end",
     "@inject-into  content",
@@ -402,6 +397,21 @@ function buildMainScript() {
   const adapter = `
 (function () {
   "use strict";
+
+  function isBitrix24PortalDocument() {
+    const hasPortalMenu = Boolean(document.querySelector(
+      "#left-menu .menu-items, #left-menu-list, #bx_left_menu_menu_container, " +
+      "[data-role='left-menu'], .intranet-left-menu, .bitrix24-left-menu"
+    ));
+    const hasBitrixAssets = Boolean(document.querySelector(
+      "script[src*='/bitrix/js/'], link[href*='/bitrix/'], [data-bx-app-layout], .bitrix24-light-theme"
+    ));
+    return hasPortalMenu && hasBitrixAssets;
+  }
+
+  if (!isBitrix24PortalDocument()) {
+    return;
+  }
 
   const styles = ${JSON.stringify(styles)};
   Promise.resolve(GM.addStyle(styles)).catch(function (error) {
@@ -467,11 +477,17 @@ function buildMainScript() {
           const urls = message.type === "b24ql-open-tabs" ? message.urls : [message.url];
           let opened = 0;
           for (const url of urls || []) {
-            if (typeof url !== "string" || !url.toLowerCase().startsWith("https://")) {
+            let parsedUrl;
+            try {
+              parsedUrl = new URL(url);
+            } catch (error) {
+              continue;
+            }
+            if (parsedUrl.protocol !== "https:" || parsedUrl.origin !== window.location.origin) {
               continue;
             }
             try {
-              await GM.openInTab(url, message.type === "b24ql-open-tabs");
+              await GM.openInTab(parsedUrl.href, message.type === "b24ql-open-tabs");
               opened += 1;
             } catch (error) {
               return { ok: false, count: opened };
@@ -517,7 +533,7 @@ function buildPageBridgeScript() {
     "@name         Bitrix24 Быстрые ссылки BX.UI bridge (Safari)",
     "@namespace    https://github.com/SStorozhuk/B24-Quick-Links-Extension",
     `@version      ${VERSION}`,
-    "@description  Мост к компонентам BX.UI порталов Bitrix24.",
+    "@description  Мост к компонентам BX.UI облачных и коробочных порталов Bitrix24.",
     ...portalMatches(),
     "@run-at       document-end",
     "@inject-into  page",
@@ -527,7 +543,7 @@ function buildPageBridgeScript() {
   ]);
 
   const body = pageScriptFiles.map((file) => `/* ${file} */\n${read(file)}`).join("\n\n");
-  return `${header}${body}\n\n// Handles the rare case where the content script initialized first.\ndocument.dispatchEvent(new Event("b24ql-ui-render"));\n`;
+  return `${header}(function () {\n  "use strict";\n  const hasPortalMenu = Boolean(document.querySelector(\n    "#left-menu .menu-items, #left-menu-list, #bx_left_menu_menu_container, " +\n    "[data-role='left-menu'], .intranet-left-menu, .bitrix24-left-menu"\n  ));\n  const hasBitrixAssets = Boolean(document.querySelector(\n    "script[src*='/bitrix/js/'], link[href*='/bitrix/'], [data-bx-app-layout], .bitrix24-light-theme"\n  ));\n  if (!hasPortalMenu || !hasBitrixAssets) {\n    return;\n  }\n\n${body}\n\n  // Handles the rare case where the content script initialized first.\n  document.dispatchEvent(new Event("b24ql-ui-render"));\n})();\n`;
 }
 
 fs.mkdirSync(outputDir, { recursive: true });

@@ -6,17 +6,15 @@ const path = require("node:path");
 const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "../..");
-const mainPath = path.join(root, "releases/1.0/safari/b24-quick-links-safari.user.js");
-const bridgePath = path.join(root, "releases/1.0/safari/b24-quick-links-bxui-safari.user.js");
+const mainPath = path.join(root, "releases/1.1/safari/b24-quick-links-safari.user.js");
+const bridgePath = path.join(root, "releases/1.1/safari/b24-quick-links-bxui-safari.user.js");
 const main = fs.readFileSync(mainPath, "utf8");
 const bridge = fs.readFileSync(bridgePath, "utf8");
 
-assert.match(main, /@match\s+https:\/\/bitrix24test\.ostec-group\.ru\/\*/);
-assert.match(main, /@match\s+https:\/\/bitrix24\.ostec-group\.ru\/\*/);
-assert.match(main, /@match\s+https:\/\/bitrix24develop\.ostec-group\.ru\/\*/);
-assert.match(main, /@match\s+https:\/\/bitrix24\.selectica\.ru\/\*/);
-assert.match(main, /@match\s+https:\/\/bitrix24test\.selectica\.ru\/\*/);
-assert.match(main, /@match\s+https:\/\/bitrix24develop\.selectica\.ru\/\*/);
+assert.match(main, /@match\s+https:\/\/\*\/\*/);
+assert.match(main, /isBitrix24PortalDocument/);
+assert.match(main, /legacyPortalHosts/);
+assert.match(main, /url:\s*"\/crm\/deal\/kanban\/"/);
 assert.match(main, /@inject-into\s+content/);
 assert.match(main, /@grant\s+GM\.getValue/);
 assert.match(main, /@grant\s+GM\.openInTab/);
@@ -39,12 +37,8 @@ assert.doesNotMatch(main, /url\(\\?"vendor\/images\/search\.svg\\?"\)/);
 
 assert.match(bridge, /@inject-into\s+page/);
 assert.match(bridge, /@grant\s+none/);
-assert.match(bridge, /@match\s+https:\/\/bitrix24\.ostec-group\.ru\/\*/);
-assert.match(bridge, /@match\s+https:\/\/bitrix24test\.ostec-group\.ru\/\*/);
-assert.match(bridge, /@match\s+https:\/\/bitrix24develop\.ostec-group\.ru\/\*/);
-assert.match(bridge, /@match\s+https:\/\/bitrix24\.selectica\.ru\/\*/);
-assert.match(bridge, /@match\s+https:\/\/bitrix24test\.selectica\.ru\/\*/);
-assert.match(bridge, /@match\s+https:\/\/bitrix24develop\.selectica\.ru\/\*/);
+assert.match(bridge, /@match\s+https:\/\/\*\/\*/);
+assert.match(bridge, /hasPortalMenu/);
 assert.match(bridge, /b24ql-ui-render/);
 assert.match(bridge, /new ui\.Button/);
 assert.match(bridge, /b24ql-ui-dispose/);
@@ -61,6 +55,8 @@ const values = new Map();
 const openedTabs = [];
 const context = {
   console,
+  URL,
+  window: { location: { origin: "https://crm.example.org" } },
   GM: {
     async getValue(key, defaultValue) {
       return values.has(key) ? values.get(key) : defaultValue;
@@ -110,20 +106,25 @@ function plain(value) {
   );
 
   assert.deepEqual(
-    plain(await sendMessage({ type: "b24ql-open-tab", url: "https://bitrix24test.ostec-group.ru/crm/" })),
+    plain(await sendMessage({ type: "b24ql-open-tab", url: "https://crm.example.org/crm/" })),
     { ok: true, count: 1 }
   );
   assert.deepEqual(openedTabs[0], {
-    url: "https://bitrix24test.ostec-group.ru/crm/",
+    url: "https://crm.example.org/crm/",
     background: false
   });
 
   const urls = [
-    "https://bitrix24test.ostec-group.ru/company/",
-    "https://bitrix24test.ostec-group.ru/tasks/"
+    "https://crm.example.org/company/",
+    "https://crm.example.org/tasks/"
   ];
   assert.deepEqual(plain(await sendMessage({ type: "b24ql-open-tabs", urls })), { ok: true, count: 2 });
   assert.equal(openedTabs.slice(1).every(function (tab) { return tab.background === true; }), true);
+
+  assert.deepEqual(
+    plain(await sendMessage({ type: "b24ql-open-tab", url: "https://example.com/" })),
+    { ok: false, count: 0 }
+  );
 
   process.stdout.write("Safari Userscripts build tests passed\n");
 })().catch(function (error) {

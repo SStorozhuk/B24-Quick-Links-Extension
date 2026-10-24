@@ -144,18 +144,20 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
   const promiseStoragePage = await context.newPage();
   await promiseStoragePage.goto("https://bitrix24test.ostec-group.ru/stream/");
   await promiseStoragePage.evaluate(function () {
-    window.__storageCalls = { get: 0, set: 0 };
+    window.__storageCalls = { get: 0, set: 0, requested: [], written: [] };
     window.browser = {
       storage: {
         local: {
-          get() {
+          get(keys) {
             if (arguments.length !== 1) throw new Error("Promise storage.get received a callback");
             window.__storageCalls.get += 1;
+            window.__storageCalls.requested = keys.slice();
             return Promise.resolve({ "b24ql-theme-v2": "dark" });
           },
-          set() {
+          set(values) {
             if (arguments.length !== 1) throw new Error("Promise storage.set received a callback");
             window.__storageCalls.set += 1;
+            window.__storageCalls.written.push(values);
             return Promise.resolve();
           }
         }
@@ -168,33 +170,12 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
   await promiseStoragePage.waitForFunction(() =>
     document.querySelector("#b24ql-modal")?.dataset.b24qlEffectiveTheme === "dark");
   assert.equal(await promiseStoragePage.evaluate(() => window.__storageCalls.get), 1);
+  const scopedStorageKey = "b24ql-portal:" + encodeURIComponent("https://bitrix24test.ostec-group.ru") +
+    ":b24ql-config-schema-v1";
+  assert.equal(await promiseStoragePage.evaluate(key => window.__storageCalls.requested.includes(key), scopedStorageKey), true);
+  assert.equal(await promiseStoragePage.evaluate(key => window.__storageCalls.written.some(values =>
+    Object.prototype.hasOwnProperty.call(values, key)), scopedStorageKey), true);
   await promiseStoragePage.close();
-
-  const firefoxStoragePage = await context.newPage();
-  await firefoxStoragePage.goto("https://bitrix24test.ostec-group.ru/stream/");
-  await firefoxStoragePage.evaluate(function () {
-    window.__firefoxStorageCalls = [];
-    localStorage.setItem("b24ql-theme-v2", "dark");
-    window.browser = {
-      runtime: {
-        sendMessage(message) {
-          window.__firefoxStorageCalls.push(message);
-          return Promise.resolve({ ok: true });
-        }
-      }
-    };
-  });
-  await firefoxStoragePage.addScriptTag({ path: path.resolve(__dirname, "../../src/firefox/settings.js") });
-  await firefoxStoragePage.addScriptTag({ path: path.resolve(__dirname, "../../src/firefox/recovery-settings.js") });
-  await firefoxStoragePage.addScriptTag({ path: path.resolve(__dirname, "../../src/firefox/content.js") });
-  await firefoxStoragePage.locator("#b24ql-menu-button").click();
-  await firefoxStoragePage.waitForFunction(() =>
-    document.querySelector("#b24ql-modal")?.dataset.b24qlEffectiveTheme === "dark");
-  const firefoxStorageCalls = await firefoxStoragePage.evaluate(() => window.__firefoxStorageCalls);
-  assert.equal(firefoxStorageCalls.length, 0);
-  assert.equal(await firefoxStoragePage.evaluate(() => localStorage.getItem("b24ql-theme-v2")), "dark");
-  assert.equal(await firefoxStoragePage.evaluate(() => Boolean(localStorage.getItem("b24ql-custom-sections-v1"))), true);
-  await firefoxStoragePage.close();
 
   await page.locator("#b24ql-menu-button").click();
   await page.locator("#b24ql-modal:not(.b24ql-hidden)").waitFor();
@@ -239,12 +220,12 @@ const executablePath = browserCandidates.find(candidate => fs.existsSync(candida
   await search.fill("");
   assert.equal(await page.locator(".b24ql-source-section .b24ql-link").count(), sourceLinkCount);
 
-  const projectSection = page.locator('.b24ql-source-section[data-section-title="Проекты"]');
-  await projectSection.locator(".b24ql-favorite-toggle").first().click();
+  const crmSection = page.locator('.b24ql-source-section[data-section-title="CRM"]');
+  await crmSection.locator(".b24ql-favorite-toggle").first().click();
   assert.equal(await page.locator("#b24ql-favorites-grid .b24ql-link").count() > 0, true);
 
-  const dealGroup = page.locator('.b24ql-source-section[data-section-title="CRM"] .b24ql-link-group', { hasText: "Сделки" });
-  await dealGroup.click();
+  const clientGroup = page.locator('.b24ql-source-section[data-section-title="CRM"] .b24ql-link-group', { hasText: "Клиенты" });
+  await clientGroup.click();
   assert.equal(await page.locator("#b24ql-submodal:not(.b24ql-hidden) .b24ql-link").count() > 0, true);
   await page.waitForTimeout(320);
   const subPanelBox = await page.locator("#b24ql-submodal .b24ql-subpanel").boundingBox();

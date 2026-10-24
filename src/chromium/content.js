@@ -22,7 +22,7 @@
   const OPEN_ALL_SECTIONS_KEY = "b24ql-open-all-sections-v1";
   const CUSTOM_SECTIONS_KEY = "b24ql-custom-sections-v1";
   const CONFIG_SCHEMA_KEY = "b24ql-config-schema-v1";
-  const CONFIG_SCHEMA_VERSION = 4;
+  const CONFIG_SCHEMA_VERSION = 5;
   const TEMPLATE_MODAL_ID = "b24ql-template-modal";
   const POSITION_SCHEMA_VERSION = 5;
   const LEFT_MENU_SELECTORS = [
@@ -46,6 +46,8 @@
     CUSTOM_SECTIONS_KEY,
     CONFIG_SCHEMA_KEY
   ];
+  const GLOBAL_STORAGE_KEYS = new Set([THEME_KEY]);
+  const PORTAL_STORAGE_PREFIX = "b24ql-portal:" + encodeURIComponent(window.location.origin) + ":";
 
   /* Настройки ссылок, порталов и свернутых блоков берутся из settings.js. */
   const settings = (typeof globalThis !== "undefined" && globalThis.B24QL_SETTINGS)
@@ -55,8 +57,10 @@
     || {};
   const isSafariUserscriptRuntime = typeof __B24QL_SAFARI_RUNTIME__ !== "undefined"
     && __B24QL_SAFARI_RUNTIME__ === true;
-  const PORTAL_HOSTS = Array.isArray(settings.portalHosts) ? settings.portalHosts : [];
-  const PRODUCTION_PORTAL_HOST = settings.defaultPortalHost || PORTAL_HOSTS[0] || window.location.hostname;
+  const LEGACY_PORTAL_HOSTS = Array.isArray(settings.legacyPortalHosts)
+    ? settings.legacyPortalHosts
+    : [];
+  const SHOULD_IMPORT_GLOBAL_LEGACY_STORAGE = LEGACY_PORTAL_HOSTS.includes(window.location.hostname);
   const DEFAULT_COLLAPSED_SECTIONS = settings.defaultCollapsedSections || {};
   const DEFAULT_OPEN_ALL_SECTIONS = settings.defaultOpenAllSections || {};
   const DEFAULT_SECTIONS = Array.isArray(settings.sections) ? cloneJson(settings.sections) : [];
@@ -161,6 +165,10 @@
     return hasStoredValue(key) ? storageCache[key] : undefined;
   }
 
+  function getExtensionStorageKey(key) {
+    return GLOBAL_STORAGE_KEYS.has(key) ? key : PORTAL_STORAGE_PREFIX + key;
+  }
+
   function setStoredValue(key, value) {
     storageCache[key] = value;
     dirtyStorageKeys.add(key);
@@ -172,7 +180,7 @@
 
     try {
       const payload = {};
-      payload[key] = value;
+      payload[getExtensionStorageKey(key)] = value;
       const result = usesPromiseStorage
         ? extensionStorage.set(payload)
         : extensionStorage.set(payload, function () {});
@@ -198,12 +206,20 @@
       };
 
       try {
+        const storageKeys = Array.from(new Set(PERSISTENT_STORAGE_KEYS.reduce(function (result, key) {
+          result.push(getExtensionStorageKey(key));
+          if (SHOULD_IMPORT_GLOBAL_LEGACY_STORAGE && !GLOBAL_STORAGE_KEYS.has(key)) {
+            result.push(key);
+          }
+          return result;
+        }, [])));
+
         if (usesPromiseStorage) {
-          extensionStorage.get(PERSISTENT_STORAGE_KEYS).then(finish, function () { resolve(); });
+          extensionStorage.get(storageKeys).then(finish, function () { resolve(); });
           return;
         }
 
-        extensionStorage.get(PERSISTENT_STORAGE_KEYS, finish);
+        extensionStorage.get(storageKeys, finish);
       } catch (error) {
         resolve();
       }
@@ -214,15 +230,24 @@
     const migrationPayload = {};
 
     PERSISTENT_STORAGE_KEYS.forEach(function (key) {
-      if (Object.prototype.hasOwnProperty.call(items, key)) {
+      const storageKey = getExtensionStorageKey(key);
+      const hasScopedValue = Object.prototype.hasOwnProperty.call(items, storageKey);
+      const hasLegacyValue = SHOULD_IMPORT_GLOBAL_LEGACY_STORAGE &&
+        !GLOBAL_STORAGE_KEYS.has(key) &&
+        Object.prototype.hasOwnProperty.call(items, key);
+
+      if (hasScopedValue || hasLegacyValue) {
         if (!dirtyStorageKeys.has(key)) {
-          storageCache[key] = items[key];
+          storageCache[key] = hasScopedValue ? items[storageKey] : items[key];
+        }
+        if (!hasScopedValue && hasLegacyValue) {
+          migrationPayload[storageKey] = items[key];
         }
         return;
       }
 
       if (hasStoredValue(key)) {
-        migrationPayload[key] = storageCache[key];
+        migrationPayload[storageKey] = storageCache[key];
       }
     });
 
@@ -320,8 +345,10 @@
 
       const path = (parentPath || []).concat(title);
       const destinationSeed = typeof link.url === "string"
-        ? link.url.trim()
-        : (link.template && typeof link.template.url === "string" ? link.template.url.trim() : "group");
+        ? normalizePortalDestination(link.url)
+        : (link.template && typeof link.template.url === "string"
+          ? normalizePortalDestination(link.template.url)
+          : "group");
       const common = {
         id: getSanitizedLinkId(link.id, path.join("/") + "|" + destinationSeed),
         title: title
@@ -343,7 +370,7 @@
       }
 
       if (typeof link.url === "string" && link.url.trim()) {
-        common.url = link.url.trim();
+        common.url = normalizePortalDestination(link.url);
         return common;
       }
 
@@ -395,9 +422,59 @@
     }
 
     return {
-      url: value.url.trim(),
+      url: normalizePortalDestination(value.url),
       fields: fields
     };
+  }
+
+  function normalizePortalDestination(value, additionalHosts) {
+    const destination = String(value || "").trim();
+    if (!destination) {
+      return destination;
+    }
+    if (destination.startsWith("/")) {
+      return destination;
+    }
+
+    try {
+      const parsed = new URL(destination);
+      const migrationHosts = new Set(LEGACY_PORTAL_HOSTS.concat(additionalHosts || []));
+      const isPortalRelative = parsed.origin === window.location.origin ||
+        migrationHosts.has(parsed.hostname);
+
+      if (isPortalRelative) {
+        const authorityEnd = destination.indexOf("/", destination.indexOf("//") + 2);
+        return authorityEnd >= 0 ? destination.slice(authorityEnd) : "/";
+      }
+      return parsed.href;
+    } catch (error) {
+      return destination;
+    }
+  }
+
+  function normalizeImportedPortalLinks(sectionList, additionalHosts) {
+    const result = cloneJson(sectionList);
+
+    function visitLinks(links) {
+      (links || []).forEach(function (link) {
+        if (typeof link.url === "string") {
+          link.url = normalizePortalDestination(link.url, additionalHosts);
+        }
+        if (link.template && typeof link.template.url === "string") {
+          link.template.url = normalizePortalDestination(link.template.url, additionalHosts);
+        }
+        if (Array.isArray(link.links)) {
+          visitLinks(link.links);
+        }
+      });
+    }
+
+    (result || []).forEach(function (section) {
+      if (section && Array.isArray(section.links)) {
+        visitLinks(section.links);
+      }
+    });
+    return result;
   }
 
   function getSanitizedLinkId(value, seed) {
@@ -624,21 +701,10 @@
     applyModalTheme();
   }
 
-  /* Подмена домена в ссылках под текущий портал: prod, test или develop. */
-  function getCurrentPortalHost() {
-    return PORTAL_HOSTS.includes(window.location.hostname)
-      ? window.location.hostname
-      : PRODUCTION_PORTAL_HOST;
-  }
-
+  /* Внутренние пути открываются на текущем активированном портале. */
   function getPortalUrl(url) {
     try {
-      const targetUrl = new URL(url);
-      if (targetUrl.hostname === PRODUCTION_PORTAL_HOST || PORTAL_HOSTS.includes(targetUrl.hostname)) {
-        targetUrl.protocol = "https:";
-        targetUrl.hostname = getCurrentPortalHost();
-      }
-      return targetUrl.href;
+      return new URL(url, window.location.origin).href;
     } catch (error) {
       return url;
     }
@@ -2580,14 +2646,16 @@
     } else if (link.template) {
       const urlInput = createEditorInput("Шаблон ссылки", link.template.url || "");
       urlInput.addEventListener("change", function () {
-        link.template.url = getInputValue(urlInput, link.template.url);
+        link.template.url = normalizePortalDestination(getInputValue(urlInput, link.template.url));
+        urlInput.value = link.template.url;
         markLinksEditorDirty();
       });
       fields.appendChild(urlInput.parentElement);
     } else {
       const urlInput = createEditorInput("Ссылка", link.url || "");
       urlInput.addEventListener("change", function () {
-        link.url = getInputValue(urlInput, link.url || "https://" + PRODUCTION_PORTAL_HOST + "/");
+        link.url = normalizePortalDestination(getInputValue(urlInput, link.url || "/"));
+        urlInput.value = link.url;
         markLinksEditorDirty();
       });
       fields.appendChild(urlInput.parentElement);
@@ -2741,7 +2809,7 @@
     context.list.push({
       id: createLinkId(),
       title: "Новая кнопка",
-      url: "https://" + PRODUCTION_PORTAL_HOST + "/"
+      url: "/"
     });
     markLinksEditorDirty();
     renderLinksEditor();
@@ -2818,8 +2886,7 @@
     const payload = {
       version: CONFIG_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
-      portalHosts: PORTAL_HOSTS,
-      defaultPortalHost: PRODUCTION_PORTAL_HOST,
+      portalOrigin: window.location.origin,
       collapsedSections: getCurrentCollapsedSectionsExport(),
       openAllSections: getCurrentOpenAllSectionsExport(),
       favoriteLinkIds: (linksEditorDraftFavoriteLinkIds || favoriteLinkIds).slice(),
@@ -2894,7 +2961,24 @@
       throw new Error("в файле нет массива sections");
     }
 
-    const importedSections = sanitizeSections(rawSections);
+    const importedHosts = [];
+    if (payload && !Array.isArray(payload)) {
+      if (Array.isArray(payload.portalHosts)) {
+        importedHosts.push.apply(importedHosts, payload.portalHosts);
+      }
+      if (typeof payload.defaultPortalHost === "string") {
+        importedHosts.push(payload.defaultPortalHost);
+      }
+      if (typeof payload.portalOrigin === "string") {
+        try {
+          importedHosts.push(new URL(payload.portalOrigin).hostname);
+        } catch (error) {
+          // Некорректный служебный адрес не мешает импорту самих кнопок.
+        }
+      }
+    }
+
+    const importedSections = sanitizeSections(normalizeImportedPortalLinks(rawSections, importedHosts));
     const importedVersion = payload && !Array.isArray(payload) ? Number(payload.version) || 0 : 0;
     if (importedVersion < CONFIG_SCHEMA_VERSION) {
       addMissingDefaultTemplateLinks(importedSections);

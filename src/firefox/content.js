@@ -22,7 +22,7 @@
   const OPEN_ALL_SECTIONS_KEY = "b24ql-open-all-sections-v1";
   const CUSTOM_SECTIONS_KEY = "b24ql-custom-sections-v1";
   const CONFIG_SCHEMA_KEY = "b24ql-config-schema-v1";
-  const CONFIG_SCHEMA_VERSION = 4;
+  const CONFIG_SCHEMA_VERSION = 5;
   const TEMPLATE_MODAL_ID = "b24ql-template-modal";
   const POSITION_SCHEMA_VERSION = 5;
   const LEFT_MENU_SELECTORS = [
@@ -46,28 +46,31 @@
     CUSTOM_SECTIONS_KEY,
     CONFIG_SCHEMA_KEY
   ];
+  const GLOBAL_STORAGE_KEYS = new Set([THEME_KEY]);
+  const PORTAL_STORAGE_PREFIX = "b24ql-portal:" + encodeURIComponent(window.location.origin) + ":";
 
   /* Настройки ссылок, порталов и свернутых блоков берутся из settings.js. */
   const settings = (typeof globalThis !== "undefined" && globalThis.B24QL_SETTINGS)
     || window.B24QL_SETTINGS
     || {};
-  const PORTAL_HOSTS = Array.isArray(settings.portalHosts) ? settings.portalHosts : [];
-  const PRODUCTION_PORTAL_HOST = settings.defaultPortalHost || PORTAL_HOSTS[0] || window.location.hostname;
+  const runtimeOptions = (typeof globalThis !== "undefined" && globalThis.B24QL_RUNTIME_OPTIONS)
+    || {};
+  const isSafariUserscriptRuntime = typeof __B24QL_SAFARI_RUNTIME__ !== "undefined"
+    && __B24QL_SAFARI_RUNTIME__ === true;
+  const LEGACY_PORTAL_HOSTS = Array.isArray(settings.legacyPortalHosts)
+    ? settings.legacyPortalHosts
+    : [];
+  const SHOULD_IMPORT_GLOBAL_LEGACY_STORAGE = LEGACY_PORTAL_HOSTS.includes(window.location.hostname);
   const DEFAULT_COLLAPSED_SECTIONS = settings.defaultCollapsedSections || {};
   const DEFAULT_OPEN_ALL_SECTIONS = settings.defaultOpenAllSections || {};
   const DEFAULT_SECTIONS = Array.isArray(settings.sections) ? cloneJson(settings.sections) : [];
+  const extensionApi = getExtensionApi();
+  const extensionStorage = extensionApi && extensionApi.storage && extensionApi.storage.local
+    ? extensionApi.storage.local
+    : null;
+  const usesPromiseStorage = typeof browser !== "undefined" && extensionApi === browser;
   const storageCache = readLegacyStorageSnapshot();
-  const recoveryStorage = (typeof globalThis !== "undefined" && globalThis.B24QL_RECOVERY_STORAGE) || {};
-  Object.keys(recoveryStorage).forEach(function (key) {
-    if (!Object.prototype.hasOwnProperty.call(storageCache, key)) {
-      storageCache[key] = cloneJson(recoveryStorage[key]);
-    }
-  });
-  PERSISTENT_STORAGE_KEYS.forEach(function (key) {
-    if (Object.prototype.hasOwnProperty.call(storageCache, key)) {
-      writeLegacyStorageValue(key, storageCache[key]);
-    }
-  });
+  const dirtyStorageKeys = new Set();
   let sections = readSectionsConfig();
 
   /* Текущее состояние интерфейса: перетаскивание, тема, свернутые блоки и "открыть все". */
@@ -104,6 +107,18 @@
     } catch (error) {
       return [];
     }
+  }
+
+  function getExtensionApi() {
+    if (typeof chrome !== "undefined" && chrome.storage) {
+      return chrome;
+    }
+
+    if (typeof browser !== "undefined" && browser.storage) {
+      return browser;
+    }
+
+    return null;
   }
 
   function readLegacyStorageSnapshot() {
@@ -150,9 +165,106 @@
     return hasStoredValue(key) ? storageCache[key] : undefined;
   }
 
+  function getExtensionStorageKey(key) {
+    return GLOBAL_STORAGE_KEYS.has(key) ? key : PORTAL_STORAGE_PREFIX + key;
+  }
+
   function setStoredValue(key, value) {
     storageCache[key] = value;
-    writeLegacyStorageValue(key, value);
+    dirtyStorageKeys.add(key);
+
+    if (!extensionStorage) {
+      writeLegacyStorageValue(key, value);
+      return;
+    }
+
+    try {
+      const payload = {};
+      payload[getExtensionStorageKey(key)] = value;
+      const result = usesPromiseStorage
+        ? extensionStorage.set(payload)
+        : extensionStorage.set(payload, function () {});
+      if (result && typeof result.catch === "function") {
+        result.catch(function () {
+          writeLegacyStorageValue(key, value);
+        });
+      }
+    } catch (error) {
+      writeLegacyStorageValue(key, value);
+    }
+  }
+
+  function loadExtensionStorage() {
+    if (!extensionStorage) {
+      return Promise.resolve();
+    }
+
+    return new Promise(function (resolve) {
+      const finish = function (items) {
+        applyLoadedStorage(items || {});
+        resolve();
+      };
+
+      try {
+        const storageKeys = Array.from(new Set(PERSISTENT_STORAGE_KEYS.reduce(function (result, key) {
+          result.push(getExtensionStorageKey(key));
+          if (SHOULD_IMPORT_GLOBAL_LEGACY_STORAGE && !GLOBAL_STORAGE_KEYS.has(key)) {
+            result.push(key);
+          }
+          return result;
+        }, [])));
+
+        if (usesPromiseStorage) {
+          extensionStorage.get(storageKeys).then(finish, function () { resolve(); });
+          return;
+        }
+
+        extensionStorage.get(storageKeys, finish);
+      } catch (error) {
+        resolve();
+      }
+    });
+  }
+
+  function applyLoadedStorage(items) {
+    const migrationPayload = {};
+
+    PERSISTENT_STORAGE_KEYS.forEach(function (key) {
+      const storageKey = getExtensionStorageKey(key);
+      const hasScopedValue = Object.prototype.hasOwnProperty.call(items, storageKey);
+      const hasLegacyValue = SHOULD_IMPORT_GLOBAL_LEGACY_STORAGE &&
+        !GLOBAL_STORAGE_KEYS.has(key) &&
+        Object.prototype.hasOwnProperty.call(items, key);
+
+      if (hasScopedValue || hasLegacyValue) {
+        if (!dirtyStorageKeys.has(key)) {
+          storageCache[key] = hasScopedValue ? items[storageKey] : items[key];
+        }
+        if (!hasScopedValue && hasLegacyValue) {
+          migrationPayload[storageKey] = items[key];
+        }
+        return;
+      }
+
+      if (hasStoredValue(key)) {
+        migrationPayload[storageKey] = storageCache[key];
+      }
+    });
+
+    if (Object.keys(migrationPayload).length > 0) {
+      try {
+        if (usesPromiseStorage) {
+          extensionStorage.set(migrationPayload).catch(function () {});
+        } else {
+          extensionStorage.set(migrationPayload, function () {});
+        }
+      } catch (error) {
+        // Миграция не критична: данные уже есть в кэше текущей страницы.
+      }
+    }
+
+    migrateStoredConfiguration();
+    applyStoredState();
   }
 
   function applyStoredState() {
@@ -233,8 +345,10 @@
 
       const path = (parentPath || []).concat(title);
       const destinationSeed = typeof link.url === "string"
-        ? link.url.trim()
-        : (link.template && typeof link.template.url === "string" ? link.template.url.trim() : "group");
+        ? normalizePortalDestination(link.url)
+        : (link.template && typeof link.template.url === "string"
+          ? normalizePortalDestination(link.template.url)
+          : "group");
       const common = {
         id: getSanitizedLinkId(link.id, path.join("/") + "|" + destinationSeed),
         title: title
@@ -256,7 +370,7 @@
       }
 
       if (typeof link.url === "string" && link.url.trim()) {
-        common.url = link.url.trim();
+        common.url = normalizePortalDestination(link.url);
         return common;
       }
 
@@ -308,9 +422,59 @@
     }
 
     return {
-      url: value.url.trim(),
+      url: normalizePortalDestination(value.url),
       fields: fields
     };
+  }
+
+  function normalizePortalDestination(value, additionalHosts) {
+    const destination = String(value || "").trim();
+    if (!destination) {
+      return destination;
+    }
+    if (destination.startsWith("/")) {
+      return destination;
+    }
+
+    try {
+      const parsed = new URL(destination);
+      const migrationHosts = new Set(LEGACY_PORTAL_HOSTS.concat(additionalHosts || []));
+      const isPortalRelative = parsed.origin === window.location.origin ||
+        migrationHosts.has(parsed.hostname);
+
+      if (isPortalRelative) {
+        const authorityEnd = destination.indexOf("/", destination.indexOf("//") + 2);
+        return authorityEnd >= 0 ? destination.slice(authorityEnd) : "/";
+      }
+      return parsed.href;
+    } catch (error) {
+      return destination;
+    }
+  }
+
+  function normalizeImportedPortalLinks(sectionList, additionalHosts) {
+    const result = cloneJson(sectionList);
+
+    function visitLinks(links) {
+      (links || []).forEach(function (link) {
+        if (typeof link.url === "string") {
+          link.url = normalizePortalDestination(link.url, additionalHosts);
+        }
+        if (link.template && typeof link.template.url === "string") {
+          link.template.url = normalizePortalDestination(link.template.url, additionalHosts);
+        }
+        if (Array.isArray(link.links)) {
+          visitLinks(link.links);
+        }
+      });
+    }
+
+    (result || []).forEach(function (section) {
+      if (section && Array.isArray(section.links)) {
+        visitLinks(section.links);
+      }
+    });
+    return result;
   }
 
   function getSanitizedLinkId(value, seed) {
@@ -537,21 +701,10 @@
     applyModalTheme();
   }
 
-  /* Подмена домена в ссылках под текущий портал: prod, test или develop. */
-  function getCurrentPortalHost() {
-    return PORTAL_HOSTS.includes(window.location.hostname)
-      ? window.location.hostname
-      : PRODUCTION_PORTAL_HOST;
-  }
-
+  /* Внутренние пути открываются на текущем активированном портале. */
   function getPortalUrl(url) {
     try {
-      const targetUrl = new URL(url);
-      if (targetUrl.hostname === PRODUCTION_PORTAL_HOST || PORTAL_HOSTS.includes(targetUrl.hostname)) {
-        targetUrl.protocol = "https:";
-        targetUrl.hostname = getCurrentPortalHost();
-      }
-      return targetUrl.href;
+      return new URL(url, window.location.origin).href;
     } catch (error) {
       return url;
     }
@@ -2493,14 +2646,16 @@
     } else if (link.template) {
       const urlInput = createEditorInput("Шаблон ссылки", link.template.url || "");
       urlInput.addEventListener("change", function () {
-        link.template.url = getInputValue(urlInput, link.template.url);
+        link.template.url = normalizePortalDestination(getInputValue(urlInput, link.template.url));
+        urlInput.value = link.template.url;
         markLinksEditorDirty();
       });
       fields.appendChild(urlInput.parentElement);
     } else {
       const urlInput = createEditorInput("Ссылка", link.url || "");
       urlInput.addEventListener("change", function () {
-        link.url = getInputValue(urlInput, link.url || "https://" + PRODUCTION_PORTAL_HOST + "/");
+        link.url = normalizePortalDestination(getInputValue(urlInput, link.url || "/"));
+        urlInput.value = link.url;
         markLinksEditorDirty();
       });
       fields.appendChild(urlInput.parentElement);
@@ -2654,7 +2809,7 @@
     context.list.push({
       id: createLinkId(),
       title: "Новая кнопка",
-      url: "https://" + PRODUCTION_PORTAL_HOST + "/"
+      url: "/"
     });
     markLinksEditorDirty();
     renderLinksEditor();
@@ -2731,8 +2886,7 @@
     const payload = {
       version: CONFIG_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
-      portalHosts: PORTAL_HOSTS,
-      defaultPortalHost: PRODUCTION_PORTAL_HOST,
+      portalOrigin: window.location.origin,
       collapsedSections: getCurrentCollapsedSectionsExport(),
       openAllSections: getCurrentOpenAllSectionsExport(),
       favoriteLinkIds: (linksEditorDraftFavoriteLinkIds || favoriteLinkIds).slice(),
@@ -2807,7 +2961,24 @@
       throw new Error("в файле нет массива sections");
     }
 
-    const importedSections = sanitizeSections(rawSections);
+    const importedHosts = [];
+    if (payload && !Array.isArray(payload)) {
+      if (Array.isArray(payload.portalHosts)) {
+        importedHosts.push.apply(importedHosts, payload.portalHosts);
+      }
+      if (typeof payload.defaultPortalHost === "string") {
+        importedHosts.push(payload.defaultPortalHost);
+      }
+      if (typeof payload.portalOrigin === "string") {
+        try {
+          importedHosts.push(new URL(payload.portalOrigin).hostname);
+        } catch (error) {
+          // Некорректный служебный адрес не мешает импорту самих кнопок.
+        }
+      }
+    }
+
+    const importedSections = sanitizeSections(normalizeImportedPortalLinks(rawSections, importedHosts));
     const importedVersion = payload && !Array.isArray(payload) ? Number(payload.version) || 0 : 0;
     if (importedVersion < CONFIG_SCHEMA_VERSION) {
       addMissingDefaultTemplateLinks(importedSections);
@@ -3099,9 +3270,45 @@
     const urls = collectDirectLinks(section.links, []).map(function (link) {
       return getPortalUrl(link.url);
     });
-    urls.forEach(function (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
-    });
+    const browserRuntime = typeof browser !== "undefined" && browser.runtime &&
+      typeof browser.runtime.sendMessage === "function"
+      ? browser.runtime
+      : null;
+    const chromeRuntime = typeof chrome !== "undefined" && chrome.runtime &&
+      typeof chrome.runtime.sendMessage === "function"
+      ? chrome.runtime
+      : null;
+    const runtimeApi = browserRuntime || chromeRuntime;
+    if (runtimeApi) {
+      const message = { type: "b24ql-open-tabs", urls: urls };
+      let handled = false;
+      const finish = function (response) {
+        if (handled) {
+          return;
+        }
+        handled = true;
+        const opened = response && Number.isInteger(response.count) ? response.count : 0;
+        if (!response || response.ok !== true) {
+          urls.slice(opened).forEach(function (url) {
+            window.open(url, "_blank", "noopener,noreferrer");
+          });
+        }
+      };
+      try {
+        const result = browserRuntime
+          ? runtimeApi.sendMessage(message)
+          : runtimeApi.sendMessage(message, finish);
+        if (result && typeof result.then === "function") {
+          result.then(finish, function () { finish(null); });
+        }
+      } catch (error) {
+        finish(null);
+      }
+    } else {
+      urls.forEach(function (url) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      });
+    }
     closeModal();
   }
 
@@ -3842,10 +4049,63 @@
     window.location.assign(getPortalUrl(url));
   }
 
-  /* Firefox-сборка не создает фоновую страницу: новая вкладка открывается прямо из жеста пользователя. */
+  /* Открытие ссылок через background.js, чтобы новая вкладка создавалась надежно. */
   function openLinkInNewTab(url) {
     const targetUrl = getPortalUrl(url);
+    const message = {
+      type: "b24ql-open-tab",
+      url: targetUrl
+    };
+
+    if (typeof browser !== "undefined" && browser.runtime &&
+        typeof browser.runtime.sendMessage === "function") {
+      sendRuntimeMessage(browser.runtime, message, targetUrl, true);
+      return;
+    }
+
+    if (typeof chrome !== "undefined" && chrome.runtime &&
+        typeof chrome.runtime.sendMessage === "function") {
+      sendRuntimeMessage(chrome.runtime, message, targetUrl);
+      return;
+    }
+
     window.open(targetUrl, "_blank", "noopener,noreferrer");
+  }
+
+  function sendRuntimeMessage(runtimeApi, message, fallbackUrl, promiseOnly) {
+    let handled = false;
+    const fallbackTimer = window.setTimeout(function () {
+      if (!handled) {
+        handled = true;
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+      }
+    }, 600);
+
+    const finish = function (response) {
+      if (handled) {
+        return;
+      }
+
+      handled = true;
+      window.clearTimeout(fallbackTimer);
+
+      if (!response || response.ok !== true) {
+        window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+      }
+    };
+
+    try {
+      const result = promiseOnly ? runtimeApi.sendMessage(message) : runtimeApi.sendMessage(message, finish);
+      if (result && typeof result.then === "function") {
+        result.then(finish, function () {
+          finish(null);
+        });
+      } else if (promiseOnly) {
+        finish(null);
+      }
+    } catch (error) {
+      finish(null);
+    }
   }
 
   /* Диалог подстановки ID в шаблонную ссылку. */
@@ -4004,6 +4264,11 @@
     const overlay = document.getElementById(TEMPLATE_MODAL_ID);
     if (!overlay) {
       return;
+    }
+    const uiButtonHost = overlay.querySelector("#b24ql-ui-button-host");
+    if (uiButtonHost) {
+      uiButtonHost.dataset.active = "false";
+      document.dispatchEvent(new Event("b24ql-ui-dispose"));
     }
     overlay.classList.add("b24ql-hidden");
     overlay.__b24qlLink = null;
@@ -4278,12 +4543,25 @@
     closeSubModal(true);
     const modal = document.getElementById(MODAL_ID);
     if (modal) {
-      modal.classList.add("b24ql-hidden");
+      if (runtimeOptions.destroyModalOnClose || isSafariUserscriptRuntime) {
+        if (linksEditorNoticeTimer !== null) {
+          window.clearTimeout(linksEditorNoticeTimer);
+          linksEditorNoticeTimer = null;
+        }
+        modal.remove();
+      } else {
+        modal.classList.add("b24ql-hidden");
+      }
     }
     document.documentElement.classList.remove("b24ql-page-locked");
   }
 
   function watchBitrixLayout() {
+    if (runtimeOptions.leanLayoutWatcher || isSafariUserscriptRuntime) {
+      watchBitrixLayoutLean();
+      return;
+    }
+
     let mountScheduled = false;
     let colorSyncScheduled = false;
     const observedThemeTargets = new WeakSet();
@@ -4333,6 +4611,121 @@
     });
     observeThemeTarget(document.documentElement);
     observeThemeTarget(document.body);
+  }
+
+  function watchBitrixLayoutLean() {
+    let mountScheduled = false;
+    let colorSyncScheduled = false;
+    let observedMenuRoot = null;
+    let menuObserver = null;
+    let healthCheckTimer = null;
+    const observedThemeTargets = new WeakSet();
+
+    const themeObserver = new MutationObserver(function (mutations) {
+      if (colorSyncScheduled || !mutations.some(isPortalThemeMutation)) {
+        return;
+      }
+      colorSyncScheduled = true;
+      window.requestAnimationFrame(function () {
+        colorSyncScheduled = false;
+        const leftMenu = findLeftMenuContainer();
+        const menuItem = document.getElementById(MENU_ITEM_ID);
+        if (leftMenu && menuItem) {
+          syncMenuItemColor(leftMenu, menuItem);
+        }
+      });
+    });
+
+    function observeThemeTarget(target) {
+      if (!target || observedThemeTargets.has(target)) {
+        return;
+      }
+      observedThemeTargets.add(target);
+      themeObserver.observe(target, {
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ["class", "style", "data-theme"]
+      });
+    }
+
+    function getMenuObserverRoot(leftMenu) {
+      return leftMenu && (leftMenu.closest("#left-menu") || leftMenu);
+    }
+
+    function observeMenu(leftMenu) {
+      const nextRoot = getMenuObserverRoot(leftMenu);
+      if (nextRoot === observedMenuRoot) {
+        return;
+      }
+      if (menuObserver) {
+        menuObserver.disconnect();
+      }
+      observedMenuRoot = nextRoot;
+      if (!nextRoot) {
+        return;
+      }
+      menuObserver = new MutationObserver(function (mutations) {
+        if (mutations.some(isRelevantLayoutMutation)) {
+          scheduleMount();
+        }
+      });
+      menuObserver.observe(nextRoot, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    function mountAndObserve() {
+      mountScheduled = false;
+      mountButton();
+      observeMenu(findLeftMenuContainer());
+      observeThemeTarget(document.body);
+    }
+
+    function scheduleMount() {
+      if (mountScheduled) {
+        return;
+      }
+      mountScheduled = true;
+      window.requestAnimationFrame(mountAndObserve);
+    }
+
+    function checkMenuHealth() {
+      if (document.hidden) {
+        return;
+      }
+      const menuItem = document.getElementById(MENU_ITEM_ID);
+      const leftMenu = menuItem && menuItem.parentElement;
+      if (!menuItem || !menuItem.isConnected || !leftMenu || !leftMenu.matches(LEFT_MENU_SELECTOR)) {
+        scheduleMount();
+        return;
+      }
+      observeMenu(leftMenu);
+    }
+
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        scheduleMount();
+      }
+    }
+
+    function cleanup() {
+      if (menuObserver) {
+        menuObserver.disconnect();
+      }
+      themeObserver.disconnect();
+      if (healthCheckTimer !== null) {
+        window.clearInterval(healthCheckTimer);
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }
+
+    observeThemeTarget(document.documentElement);
+    observeThemeTarget(document.body);
+    observeMenu(findLeftMenuContainer());
+    healthCheckTimer = window.setInterval(checkMenuHealth, 5000);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", cleanup, { once: true });
   }
 
   function isPortalThemeMutation(mutation) {
@@ -4433,8 +4826,18 @@
     }
   }
 
-  migrateStoredConfiguration();
-  applyStoredState();
-  mountButton();
-  watchBitrixLayout();
+  async function initialize() {
+    if (extensionStorage) {
+      await loadExtensionStorage();
+    } else {
+      migrateStoredConfiguration();
+      applyStoredState();
+    }
+    mountButton();
+    watchBitrixLayout();
+  }
+
+  initialize().catch(function (error) {
+    console.error("B24 Quick Links: initialization failed", error);
+  });
 })();

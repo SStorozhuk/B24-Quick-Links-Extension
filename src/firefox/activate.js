@@ -54,11 +54,16 @@ function sendRuntimeMessage(message) {
 function inspectBitrix24Page() {
   const menuSelectors = [
     "#left-menu .menu-items",
+    ".menu-items",
     "#left-menu-list",
     "#bx_left_menu_menu_container",
     "[data-role='left-menu']",
+    ".menu-items-block",
+    ".menu-items-body-inner",
     ".intranet-left-menu",
-    ".bitrix24-left-menu"
+    ".bitrix24-left-menu",
+    ".main-buttons",
+    "#air-header-menu"
   ];
   const hasPortalMenu = menuSelectors.some(function (selector) {
     return Boolean(document.querySelector(selector));

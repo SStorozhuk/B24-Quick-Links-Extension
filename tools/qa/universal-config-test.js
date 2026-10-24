@@ -53,4 +53,13 @@ assert.match(contentSource, /new URL\(url, window\.location\.origin\)/);
 assert.match(contentSource, /PORTAL_STORAGE_PREFIX/);
 assert.doesNotMatch(contentSource, /PRODUCTION_PORTAL_HOST/);
 
+const activationSource = fs.readFileSync(path.join(root, "src/chromium/activate.js"), "utf8");
+assert.match(activationSource, /"\.menu-items"/);
+assert.match(activationSource, /"\.main-buttons"/);
+assert.match(activationSource, /"#air-header-menu"/);
+assert.equal(
+  activationSource,
+  fs.readFileSync(path.join(root, "src/firefox/activate.js"), "utf8")
+);
+
 process.stdout.write("Universal portal configuration tests passed\n");
